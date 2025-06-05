@@ -124,3 +124,5 @@ tqdm>=4.66.0
 
 
 google-cloud-texttospeech>=2.16.0
+azure-cognitiveservices-speech>=1.30.0
+openai>=1.0.0
