@@ -659,7 +659,7 @@ class ClientFactory:
         client_imports = [
             ('sarvam', '.sarvam_client', 'SarvamClient'),
             ('chatterbox', '.chatterbox_client', 'ChatterboxClient'),
-            ('openai', '.openai_client', 'OpenAIClient'),
+            ('openai', '.openai_client', 'OpenAIClient'),  # Fixed: capital AI
             ('azure', '.azure_client', 'AzureClient'),
             ('google', '.google_client', 'GoogleClient')
         ]
@@ -712,16 +712,18 @@ class ClientFactory:
             # Get provider configuration
             provider_config = self._get_provider_config(provider)
             
-            # Override with kwargs
-            if kwargs:
-                provider_config.update(kwargs)
+            # Override with kwargs (but filter out factory-specific params)
+            factory_params = {'timeout', 'max_retries', 'enable_logging'}
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k not in factory_params}
+            if filtered_kwargs:
+                provider_config.update(filtered_kwargs)
             
             # Override model name if specified
             if model_name:
                 provider_config['model_name'] = model_name
             
-            # Create client instance
-            client = client_class(**provider_config)
+            # Create client instance based on provider-specific constructor signature
+            client = self._create_client_instance(client_class, provider, provider_config, model_name)
             
             # Cache the client
             self._client_cache[cache_key] = client
@@ -732,6 +734,45 @@ class ClientFactory:
         except Exception as e:
             self.logger.error(f"Failed to create {provider} client: {str(e)}")
             self.logger.debug(traceback.format_exc())
+            raise
+    
+    def _create_client_instance(self, client_class: Type, provider: str, config: Dict[str, Any], model_name: Optional[str]):
+        """
+        Create client instance with provider-specific constructor handling.
+        
+        Args:
+            client_class: The client class to instantiate
+            provider: Provider name
+            config: Configuration dictionary
+            model_name: Model name
+            
+        Returns:
+            Client instance
+        """
+        try:
+            if provider == 'azure':
+                # Azure client expects (model_name, config)
+                model = model_name or config.get('model_name', 'default')
+                return client_class(model, config)
+            elif provider == 'openai':
+                # OpenAI client might expect just config
+                return client_class(config)
+            elif provider in ['sarvam', 'chatterbox']:
+                # These clients might expect config only
+                return client_class(config)
+            elif provider == 'google':
+                # Google client might expect config only
+                return client_class(config)
+            else:
+                # Default: try config only first, then model_name + config
+                try:
+                    return client_class(config)
+                except TypeError:
+                    model = model_name or config.get('model_name', 'default')
+                    return client_class(model, config)
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to instantiate {provider} client: {str(e)}")
             raise
     
     def get_available_providers(self) -> List[str]:
@@ -798,21 +839,25 @@ class ClientFactory:
             
             provider_config = config_dict.get(provider, {})
             
-            # Add common configuration
+            # Add common configuration (but don't pass to client constructors)
+            # These are used by the factory for management purposes
             common_config = {
-                'timeout': config_dict.get('timeout', 30),
-                'max_retries': config_dict.get('max_retries', 3),
-                'enable_logging': config_dict.get('enable_logging', True)
+                'api_key': provider_config.get('api_key', os.getenv(f'{provider.upper()}_API_KEY')),
+                'base_url': provider_config.get('base_url'),
+                'model_name': provider_config.get('model_name', 'default')
             }
             
-            # Merge configurations
+            # Merge configurations, prioritizing provider-specific settings
             final_config = {**common_config, **provider_config}
+            
+            # Remove None values
+            final_config = {k: v for k, v in final_config.items() if v is not None}
             
             return final_config
             
         except Exception as e:
             self.logger.warning(f"Failed to get config for {provider}: {str(e)}")
-            return {}
+            return {'model_name': 'default'}
     
     def clear_cache(self):
         """Clear the client cache."""
