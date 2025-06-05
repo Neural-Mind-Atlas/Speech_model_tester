@@ -625,11 +625,6 @@ import logging
 import traceback
 
 from .base_client import BaseTTSSTTClient
-from .sarvam_client import SarvamClient
-from .chatterbox_client import ChatterboxClient
-from .openai_client import OpenAIClient
-from .azure_client import AzureClient
-from .google_client import GoogleClient
 
 logger = logging.getLogger(__name__)
 
@@ -649,19 +644,38 @@ class ClientFactory:
         self.config = config
         self.logger = logger
         
-        # Registry of available client classes
-        self.client_registry = {
-            'sarvam': SarvamClient,
-            'chatterbox': ChatterboxClient,
-            'openai': OpenAIClient,
-            'azure': AzureClient,
-            'google': GoogleClient
-        }
+        # Registry of available client classes - populated dynamically
+        self.client_registry = {}
+        self._initialize_client_registry()
         
         # Cache for created clients
         self._client_cache = {}
         
-        self.logger.info("ClientFactory initialized successfully")
+        self.logger.info(f"ClientFactory initialized with {len(self.client_registry)} available clients")
+    
+    def _initialize_client_registry(self):
+        """Initialize the client registry with available clients."""
+        # Try to import each client with graceful error handling
+        client_imports = [
+            ('sarvam', '.sarvam_client', 'SarvamClient'),
+            ('chatterbox', '.chatterbox_client', 'ChatterboxClient'),
+            ('openai', '.openai_client', 'OpenAIClient'),
+            ('azure', '.azure_client', 'AzureClient'),
+            ('google', '.google_client', 'GoogleClient')
+        ]
+        
+        for provider_name, module_path, class_name in client_imports:
+            try:
+                module = importlib.import_module(module_path, package=__package__)
+                client_class = getattr(module, class_name)
+                self.client_registry[provider_name] = client_class
+                self.logger.info(f"Successfully registered {provider_name} client")
+            except ImportError as e:
+                self.logger.warning(f"Failed to import {provider_name} client: {e}")
+            except AttributeError as e:
+                self.logger.error(f"Client class {class_name} not found in {module_path}: {e}")
+            except Exception as e:
+                self.logger.error(f"Unexpected error importing {provider_name} client: {e}")
     
     def create_client(self, provider: str, model_name: Optional[str] = None, **kwargs) -> BaseTTSSTTClient:
         """
@@ -827,6 +841,7 @@ class ClientFactory:
             try:
                 client = self.create_client(provider)
                 if hasattr(client, 'health_check'):
+                    import asyncio
                     if asyncio.iscoroutinefunction(client.health_check):
                         health_status[provider] = await client.health_check()
                     else:
@@ -838,3 +853,17 @@ class ClientFactory:
                 health_status[provider] = False
         
         return health_status
+
+    def get_client_stats(self) -> Dict[str, Any]:
+        """
+        Get statistics about the client factory.
+        
+        Returns:
+            Dict[str, Any]: Factory statistics
+        """
+        return {
+            'total_registered_clients': len(self.client_registry),
+            'available_providers': list(self.client_registry.keys()),
+            'cached_clients': len(self._client_cache),
+            'cache_keys': list(self._client_cache.keys())
+        }
