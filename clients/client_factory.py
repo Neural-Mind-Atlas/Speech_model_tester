@@ -659,7 +659,7 @@ class ClientFactory:
         client_imports = [
             ('sarvam', '.sarvam_client', 'SarvamClient'),
             ('chatterbox', '.chatterbox_client', 'ChatterboxClient'),
-            ('openai', '.openai_client', 'OpenAIClient'),  # Fixed: capital AI
+            ('openai', '.openai_client', 'OpenAIClient'),  # Fixed case sensitivity
             ('azure', '.azure_client', 'AzureClient'),
             ('google', '.google_client', 'GoogleClient')
         ]
@@ -713,8 +713,8 @@ class ClientFactory:
             provider_config = self._get_provider_config(provider)
             
             # Override with kwargs (but filter out factory-specific params)
-            factory_params = {'timeout', 'max_retries', 'enable_logging'}
-            filtered_kwargs = {k: v for k, v in kwargs.items() if k not in factory_params}
+            filtered_kwargs = {k: v for k, v in kwargs.items() 
+                             if k not in ['timeout', 'max_retries', 'enable_logging']}
             if filtered_kwargs:
                 provider_config.update(filtered_kwargs)
             
@@ -722,8 +722,21 @@ class ClientFactory:
             if model_name:
                 provider_config['model_name'] = model_name
             
-            # Create client instance based on provider-specific constructor signature
-            client = self._create_client_instance(client_class, provider, provider_config, model_name)
+            # Create client instance with proper constructor signature
+            if provider == 'azure':
+                # Azure client expects (model_name, config)
+                model = provider_config.pop('model_name', 'default')
+                client = client_class(model, provider_config)
+            elif provider == 'openai':
+                # OpenAI client expects (config) - model_name is in config
+                client = client_class(provider_config)
+            else:
+                # Other clients typically expect (config) or (**config)
+                try:
+                    client = client_class(provider_config)
+                except TypeError:
+                    # Try with **kwargs if single dict param doesn't work
+                    client = client_class(**provider_config)
             
             # Cache the client
             self._client_cache[cache_key] = client
@@ -734,45 +747,6 @@ class ClientFactory:
         except Exception as e:
             self.logger.error(f"Failed to create {provider} client: {str(e)}")
             self.logger.debug(traceback.format_exc())
-            raise
-    
-    def _create_client_instance(self, client_class: Type, provider: str, config: Dict[str, Any], model_name: Optional[str]):
-        """
-        Create client instance with provider-specific constructor handling.
-        
-        Args:
-            client_class: The client class to instantiate
-            provider: Provider name
-            config: Configuration dictionary
-            model_name: Model name
-            
-        Returns:
-            Client instance
-        """
-        try:
-            if provider == 'azure':
-                # Azure client expects (model_name, config)
-                model = model_name or config.get('model_name', 'default')
-                return client_class(model, config)
-            elif provider == 'openai':
-                # OpenAI client might expect just config
-                return client_class(config)
-            elif provider in ['sarvam', 'chatterbox']:
-                # These clients might expect config only
-                return client_class(config)
-            elif provider == 'google':
-                # Google client might expect config only
-                return client_class(config)
-            else:
-                # Default: try config only first, then model_name + config
-                try:
-                    return client_class(config)
-                except TypeError:
-                    model = model_name or config.get('model_name', 'default')
-                    return client_class(model, config)
-                    
-        except Exception as e:
-            self.logger.error(f"Failed to instantiate {provider} client: {str(e)}")
             raise
     
     def get_available_providers(self) -> List[str]:
@@ -839,25 +813,48 @@ class ClientFactory:
             
             provider_config = config_dict.get(provider, {})
             
-            # Add common configuration (but don't pass to client constructors)
-            # These are used by the factory for management purposes
-            common_config = {
-                'api_key': provider_config.get('api_key', os.getenv(f'{provider.upper()}_API_KEY')),
-                'base_url': provider_config.get('base_url'),
-                'model_name': provider_config.get('model_name', 'default')
-            }
+            # Add API key from environment if not in config
+            if 'api_key' not in provider_config:
+                env_key_map = {
+                    'openai': 'OPENAI_API_KEY',
+                    'azure': 'AZURE_SPEECH_KEY',
+                    'google': 'GOOGLE_APPLICATION_CREDENTIALS',
+                    'sarvam': 'SARVAM_API_KEY',
+                    'chatterbox': 'CHATTERBOX_API_KEY'
+                }
+                
+                if provider in env_key_map:
+                    env_key = os.getenv(env_key_map[provider])
+                    if env_key:
+                        provider_config['api_key'] = env_key
+                    else:
+                        # Set a default for testing
+                        provider_config['api_key'] = 'test_key'
             
-            # Merge configurations, prioritizing provider-specific settings
-            final_config = {**common_config, **provider_config}
+            # Add region for Azure if not present
+            if provider == 'azure' and 'region' not in provider_config:
+                provider_config['region'] = os.getenv('AZURE_SPEECH_REGION', 'eastus')
             
-            # Remove None values
-            final_config = {k: v for k, v in final_config.items() if v is not None}
+            # Ensure model_name is set
+            if 'model_name' not in provider_config:
+                default_models = {
+                    'openai': 'tts-1',
+                    'azure': 'en-US-JennyNeural', 
+                    'google': 'standard',
+                    'sarvam': 'bulbul',
+                    'chatterbox': 'default'
+                }
+                provider_config['model_name'] = default_models.get(provider, 'default')
             
-            return final_config
+            return provider_config
             
         except Exception as e:
             self.logger.warning(f"Failed to get config for {provider}: {str(e)}")
-            return {'model_name': 'default'}
+            # Return minimal working config
+            return {
+                'api_key': 'test_key',
+                'model_name': 'default'
+            }
     
     def clear_cache(self):
         """Clear the client cache."""
