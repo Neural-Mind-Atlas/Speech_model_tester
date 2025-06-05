@@ -620,11 +620,16 @@ Provides centralized client instantiation with configuration management
 
 import os
 import importlib
-from typing import Dict, Any, Optional, List, Type
+from typing import Dict, Any, Optional, List, Type, Tuple
 import logging
 import traceback
 
 from .base_client import BaseTTSSTTClient
+from .sarvam_client import SarvamClient
+from .chatterbox_client import ChatterboxClient
+from .openai_client import OpenAIClient
+from .azure_client import AzureClient
+from .google_client import GoogleClient
 
 logger = logging.getLogger(__name__)
 
@@ -636,127 +641,200 @@ class ClientFactory:
     
     def __init__(self, config: Any):
         """
-        Initialize the client factory with configuration.
+        Initialize the ClientFactory with configuration.
         
         Args:
-            config: Configuration object containing provider settings
+            config: Configuration object containing client settings
         """
         self.config = config
-        self.available_clients = {}
-        self._import_errors = []
+        self.logger = logger
         
-        # Import available clients with error handling
-        self._load_available_clients()
-        
-        logger.info(f"ClientFactory initialized with {len(self.available_clients)} available clients")
-        if self._import_errors:
-            logger.warning(f"Some clients failed to import: {[err[0] for err in self._import_errors]}")
-    
-    def _load_available_clients(self):
-        """Load available client classes with graceful error handling."""
-        client_modules = {
-            'sarvam': ('sarvam_client', 'SarvamClient'),
-            'chatterbox': ('chatterbox_client', 'ChatterboxClient'),
-            'openai': ('openai_client', 'OpenAIClient'),
-            'azure': ('azure_client', 'AzureClient'),
-            'google': ('google_client', 'GoogleClient')
+        # Registry of available client classes
+        self.client_registry = {
+            'sarvam': SarvamClient,
+            'chatterbox': ChatterboxClient,
+            'openai': OpenAIClient,
+            'azure': AzureClient,
+            'google': GoogleClient
         }
         
-        for provider, (module_name, class_name) in client_modules.items():
-            try:
-                module = importlib.import_module(f'.{module_name}', package='clients')
-                client_class = getattr(module, class_name)
-                self.available_clients[provider] = client_class
-                logger.debug(f"Successfully loaded {provider} client")
-            except ImportError as e:
-                self._import_errors.append((class_name, str(e)))
-                logger.warning(f"Failed to import {class_name}: {e}")
-            except AttributeError as e:
-                self._import_errors.append((class_name, f"Class not found: {e}"))
-                logger.warning(f"Class {class_name} not found in module {module_name}")
+        # Cache for created clients
+        self._client_cache = {}
+        
+        self.logger.info("ClientFactory initialized successfully")
     
-    def get_available_providers(self) -> List[str]:
-        """Get list of available provider names."""
-        return list(self.available_clients.keys())
-    
-    def create_client(self, provider: str, model_name: str = None, **kwargs) -> BaseTTSSTTClient:
+    def create_client(self, provider: str, model_name: Optional[str] = None, **kwargs) -> BaseTTSSTTClient:
         """
         Create a client instance for the specified provider.
         
         Args:
             provider: Provider name (e.g., 'openai', 'azure', 'google')
-            model_name: Optional model name
+            model_name: Optional model name override
             **kwargs: Additional configuration parameters
             
         Returns:
             BaseTTSSTTClient: Configured client instance
             
         Raises:
-            ValueError: If provider is not available
+            ValueError: If provider is not supported
             Exception: If client creation fails
         """
-        if provider not in self.available_clients:
-            available = ', '.join(self.available_clients.keys())
-            raise ValueError(f"Provider '{provider}' not available. Available providers: {available}")
-        
         try:
-            client_class = self.available_clients[provider]
+            provider = provider.lower()
+            
+            if provider not in self.client_registry:
+                available_providers = list(self.client_registry.keys())
+                raise ValueError(f"Unsupported provider: {provider}. Available: {available_providers}")
+            
+            # Check cache first
+            cache_key = f"{provider}_{model_name or 'default'}"
+            if cache_key in self._client_cache:
+                self.logger.debug(f"Returning cached client for {provider}")
+                return self._client_cache[cache_key]
+            
+            # Get client class
+            client_class = self.client_registry[provider]
             
             # Get provider configuration
             provider_config = self._get_provider_config(provider)
-            provider_config.update(kwargs)
+            
+            # Override with kwargs
+            if kwargs:
+                provider_config.update(kwargs)
+            
+            # Override model name if specified
+            if model_name:
+                provider_config['model_name'] = model_name
             
             # Create client instance
-            if model_name:
-                client = client_class(model_name, provider_config)
-            else:
-                # Use default model from config or provider default
-                default_model = provider_config.get('default_model', 'default')
-                client = client_class(default_model, provider_config)
+            client = client_class(**provider_config)
             
-            logger.info(f"Created {provider} client successfully")
+            # Cache the client
+            self._client_cache[cache_key] = client
+            
+            self.logger.info(f"Successfully created {provider} client")
             return client
             
         except Exception as e:
-            logger.error(f"Failed to create {provider} client: {e}")
+            self.logger.error(f"Failed to create {provider} client: {str(e)}")
+            self.logger.debug(traceback.format_exc())
             raise
     
-    def _get_provider_config(self, provider: str) -> Dict[str, Any]:
-        """Get configuration for a specific provider."""
-        # Try to get provider config from the main config
-        if hasattr(self.config, 'to_dict'):
-            config_dict = self.config.to_dict()
-        elif hasattr(self.config, 'dict'):
-            config_dict = self.config.dict()
-        else:
-            config_dict = {}
+    def get_available_providers(self) -> List[str]:
+        """
+        Get list of available provider names.
         
-        # Look for provider-specific config
-        provider_config = config_dict.get(provider, {})
-        
-        # Add common configuration
-        provider_config.update({
-            'provider': provider,
-            'max_retries': config_dict.get('max_retries', 3),
-            'timeout': config_dict.get('timeout_seconds', 300),
-        })
-        
-        return provider_config
+        Returns:
+            List[str]: List of supported provider names
+        """
+        return list(self.client_registry.keys())
     
-    def health_check_all(self) -> Dict[str, bool]:
-        """Perform health check on all available clients."""
-        results = {}
+    def is_provider_available(self, provider: str) -> bool:
+        """
+        Check if a provider is available.
         
-        for provider in self.available_clients:
+        Args:
+            provider: Provider name to check
+            
+        Returns:
+            bool: True if provider is available
+        """
+        return provider.lower() in self.client_registry
+    
+    def get_provider_info(self, provider: str) -> Dict[str, Any]:
+        """
+        Get information about a specific provider.
+        
+        Args:
+            provider: Provider name
+            
+        Returns:
+            Dict[str, Any]: Provider information
+        """
+        provider = provider.lower()
+        if provider not in self.client_registry:
+            return {}
+        
+        client_class = self.client_registry[provider]
+        return {
+            'name': provider,
+            'class': client_class.__name__,
+            'module': client_class.__module__,
+            'available': True
+        }
+    
+    def _get_provider_config(self, provider: str) -> Dict[str, Any]:
+        """
+        Get configuration for a specific provider.
+        
+        Args:
+            provider: Provider name
+            
+        Returns:
+            Dict[str, Any]: Provider configuration
+        """
+        try:
+            # Try to get provider config from the main config
+            if hasattr(self.config, 'to_dict'):
+                config_dict = self.config.to_dict()
+            elif hasattr(self.config, 'dict'):
+                config_dict = self.config.dict()
+            else:
+                config_dict = dict(self.config) if self.config else {}
+            
+            provider_config = config_dict.get(provider, {})
+            
+            # Add common configuration
+            common_config = {
+                'timeout': config_dict.get('timeout', 30),
+                'max_retries': config_dict.get('max_retries', 3),
+                'enable_logging': config_dict.get('enable_logging', True)
+            }
+            
+            # Merge configurations
+            final_config = {**common_config, **provider_config}
+            
+            return final_config
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to get config for {provider}: {str(e)}")
+            return {}
+    
+    def clear_cache(self):
+        """Clear the client cache."""
+        self._client_cache.clear()
+        self.logger.info("Client cache cleared")
+    
+    def get_cached_clients(self) -> Dict[str, BaseTTSSTTClient]:
+        """
+        Get all cached clients.
+        
+        Returns:
+            Dict[str, BaseTTSSTTClient]: Dictionary of cached clients
+        """
+        return self._client_cache.copy()
+    
+    async def health_check_all(self) -> Dict[str, bool]:
+        """
+        Perform health check on all available providers.
+        
+        Returns:
+            Dict[str, bool]: Health status for each provider
+        """
+        health_status = {}
+        
+        for provider in self.get_available_providers():
             try:
                 client = self.create_client(provider)
-                results[provider] = client.health_check()
+                if hasattr(client, 'health_check'):
+                    if asyncio.iscoroutinefunction(client.health_check):
+                        health_status[provider] = await client.health_check()
+                    else:
+                        health_status[provider] = client.health_check()
+                else:
+                    health_status[provider] = True  # Assume healthy if no health check method
             except Exception as e:
-                logger.error(f"Health check failed for {provider}: {e}")
-                results[provider] = False
+                self.logger.error(f"Health check failed for {provider}: {str(e)}")
+                health_status[provider] = False
         
-        return results
-    
-    def get_import_errors(self) -> List[Tuple[str, str]]:
-        """Get list of import errors that occurred during initialization."""
-        return self._import_errors.copy()
+        return health_status
