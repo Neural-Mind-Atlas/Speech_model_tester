@@ -1,0 +1,294 @@
+# Chatterbox AI Models Configuration
+# ================================
+
+provider:
+  name: "Chatterbox AI"
+  description: "Conversational AI platform with TTS and STT capabilities"
+  website: "https://chatterbox.ai/"
+  api_version: "v2"
+  
+# API Configuration
+api:
+  base_url: "https://api.chatterbox.ai/v2"
+  authentication:
+    type: "api_key"
+    header_name: "X-API-Key"
+    env_variable: "CHATTERBOX_API_KEY"
+  
+  rate_limits:
+    requests_per_minute: 150
+    requests_per_hour: 5000
+    concurrent_requests: 10
+    
+  retry_config:
+    max_retries: 3
+    backoff_factor: 2
+    status_codes_to_retry: [429, 500, 502, 503, 504]
+
+# Text-to-Speech Models
+tts_models:
+  # Conversational TTS model
+  - model_id: "chatterbox-tts-v2"
+    display_name: "Chatterbox Conversational TTS v2"
+    language: "en"
+    language_name: "English"
+    voice_type: "conversational"
+    
+    voice_options:
+      - voice_id: "alex"
+        gender: "male"
+        age_group: "adult"
+        personality: "friendly"
+        description: "Warm, conversational male voice"
+      - voice_id: "emma"
+        gender: "female"
+        age_group: "adult"
+        personality: "professional"
+        description: "Clear, professional female voice"
+      - voice_id: "sam"
+        gender: "neutral"
+        age_group: "adult"
+        personality: "casual"
+        description: "Casual, approachable neutral voice"
+    
+    capabilities:
+      max_text_length: 2000
+      supported_formats: ["wav", "mp3"]
+      sample_rates: [16000, 22050, 44100]
+      emotion_control: true
+      personality_adjustment: true
+      conversation_context: true
+      interruption_handling: true
+      
+    emotions:
+      - "neutral"
+      - "happy"
+      - "excited"
+      - "calm"
+      - "concerned"
+      - "empathetic"
+      
+    default_params:
+      voice_id: "emma"
+      emotion: "neutral"
+      personality_factor: 0.5
+      speaking_rate: 1.0
+      sample_rate: 16000
+      format: "wav"
+      
+  # Interactive TTS model
+  - model_id: "chatterbox-interactive-tts"
+    display_name: "Chatterbox Interactive TTS"
+    language: "en"
+    language_name: "English"
+    voice_type: "interactive"
+    
+    voice_options:
+      - voice_id: "aria"
+        gender: "female"
+        age_group: "young_adult"
+        personality: "energetic"
+        description: "Energetic, interactive female voice"
+      - voice_id: "kai"
+        gender: "male"
+        age_group: "adult"
+        personality: "supportive"
+        description: "Supportive, helpful male voice"
+    
+    capabilities:
+      max_text_length: 1500
+      supported_formats: ["wav", "mp3"]
+      sample_rates: [16000, 22050, 44100]
+      real_time_generation: true
+      context_awareness: true
+      dynamic_pacing: true
+      interactive_responses: true
+      
+    default_params:
+      voice_id: "aria"
+      interaction_mode: "conversational"
+      response_speed: "medium"
+      sample_rate: 16000
+      format: "wav"
+
+# Speech-to-Text Models
+stt_models:
+  # Conversational STT model
+  - model_id: "chatterbox-stt-v2"
+    display_name: "Chatterbox Conversational STT v2"
+    language: "en"
+    language_name: "English"
+    model_type: "conversational"
+    
+    capabilities:
+      max_audio_duration: 180  # 3 minutes
+      supported_formats: ["wav", "mp3", "webm"]
+      sample_rates: [8000, 16000, 44100]
+      real_time_processing: true
+      batch_processing: true
+      conversation_context: true
+      intent_recognition: true
+      sentiment_analysis: true
+      confidence_scores: true
+      word_timestamps: true
+      
+    default_params:
+      language: "en"
+      context_aware: true
+      enable_intent_recognition: true
+      enable_sentiment_analysis: true
+      enable_punctuation: true
+      confidence_threshold: 0.7
+      
+  # Meeting STT model
+  - model_id: "chatterbox-meeting-stt"
+    display_name: "Chatterbox Meeting STT"
+    language: "en"
+    language_name: "English"
+    model_type: "meeting"
+    
+    capabilities:
+      max_audio_duration: 3600  # 1 hour
+      supported_formats: ["wav", "mp3", "m4a"]
+      sample_rates: [16000, 44100]
+      real_time_processing: false
+      batch_processing: true
+      speaker_identification: true
+      multi_speaker_support: true
+      meeting_insights: true
+      action_item_detection: true
+      
+    default_params:
+      language: "en"
+      enable_speaker_diarization: true
+      max_speakers: 10
+      enable_meeting_insights: true
+      enable_action_items: true
+
+# Testing Configuration
+testing:
+  tts_test_params:
+    test_texts:
+      conversational:
+        - "Hello! How can I help you today?"
+        - "I understand your concern. Let me assist you with that."
+        - "That's a great question! Here's what I think..."
+        - "Thanks for sharing that with me. I appreciate your input."
+      interactive:
+        - "Welcome back! What would you like to explore today?"
+        - "Interesting choice! Let's dive deeper into that topic."
+        - "I'm here to help. Feel free to ask me anything!"
+        
+    emotion_tests:
+      - emotion: "happy"
+        text: "Congratulations on your achievement!"
+      - emotion: "empathetic"
+        text: "I understand this might be difficult for you."
+      - emotion: "excited"
+        text: "This is such exciting news!"
+        
+    voice_tests:
+      - voice: "emma"
+        description: "Professional female voice"
+      - voice: "alex"
+        description: "Friendly male voice"
+      - voice: "aria"
+        description: "Energetic interactive voice"
+        
+    quality_thresholds:
+      min_audio_quality: 0.75
+      max_latency_ms: 2500
+      min_naturalness_score: 0.7
+      min_emotion_accuracy: 0.6
+      
+  stt_test_params:
+    test_audio_files:
+      conversational:
+        - "data/audio/chatterbox/conversation1.wav"
+        - "data/audio/chatterbox/conversation2.wav"
+        - "data/audio/chatterbox/phone_call.wav"
+      meeting:
+        - "data/audio/chatterbox/meeting1.wav"
+        - "data/audio/chatterbox/conference_call.wav"
+        - "data/audio/chatterbox/multi_speaker.wav"
+        
+    context_tests:
+      - context: "customer_support"
+        description: "Customer service conversation"
+      - context: "business_meeting"
+        description: "Corporate meeting discussion"
+      - context: "casual_chat"
+        description: "Informal conversation"
+        
+    accuracy_thresholds:
+      min_word_accuracy: 0.85
+      max_word_error_rate: 0.15
+      min_confidence_score: 0.7
+      min_intent_accuracy: 0.8
+      min_sentiment_accuracy: 0.75
+
+# Health Check Configuration
+health_check:
+  endpoints:
+    tts: "/tts/health"
+    stt: "/stt/health"
+    general: "/health"
+  timeout_seconds: 10
+  expected_status_codes: [200]
+  
+# Error Handling
+error_handling:
+  common_errors:
+    - error_code: "INVALID_API_KEY"
+      description: "Invalid or expired API key"
+      retry: false
+    - error_code: "RATE_LIMIT_EXCEEDED"
+      description: "Rate limit exceeded"
+      retry: true
+      wait_time: 60
+    - error_code: "AUDIO_TOO_LONG"
+      description: "Audio file exceeds maximum duration"
+      retry: false
+    - error_code: "UNSUPPORTED_FORMAT"
+      description: "Audio format not supported"
+      retry: false
+    - error_code: "CONTEXT_LIMIT_EXCEEDED"
+      description: "Conversation context too long"
+      retry: false
+    - error_code: "VOICE_NOT_AVAILABLE"
+      description: "Requested voice not available"
+      retry: false
+      
+# Special Features
+features:
+  conversation_memory:
+    enabled: true
+    max_context_length: 1000
+    memory_duration_minutes: 30
+    
+  personality_adaptation:
+    enabled: true
+    learning_rate: 0.1
+    adaptation_threshold: 5  # interactions
+    
+  real_time_optimization:
+    enabled: true
+    latency_target_ms: 500
+    quality_vs_speed_balance: 0.7  # 0=speed, 1=quality
+    
+  analytics:
+    conversation_analytics: true
+    emotion_tracking: true
+    engagement_metrics: true
+    
+# Metadata
+metadata:
+  config_version: "1.0.0"
+  last_updated: "2024-01-01"
+  supported_languages: ["en"]
+  specialization: "conversational_ai"
+  unique_features: ["emotion_control", "personality_adjustment", "conversation_context"]
+  documentation_url: "https://docs.chatterbox.ai/"
+  
+# Note: Chatterbox AI is disabled by default in the main config
+# Enable it by setting enabled: true in the main test_config.yaml

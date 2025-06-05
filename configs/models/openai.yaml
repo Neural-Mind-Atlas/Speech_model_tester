@@ -1,0 +1,329 @@
+# OpenAI Speech Models Configuration
+# ================================
+
+provider:
+  name: "OpenAI"
+  description: "OpenAI Speech API for TTS and Whisper for STT"
+  website: "https://openai.com/"
+  api_version: "v1"
+  
+# API Configuration
+api:
+  base_url: "https://api.openai.com/v1"
+  authentication:
+    type: "bearer_token"
+    header_name: "Authorization"
+    prefix: "Bearer"
+    env_variable: "OPENAI_API_KEY"
+  
+  rate_limits:
+    requests_per_minute: 500
+    requests_per_hour: 10000
+    concurrent_requests: 50
+    
+  retry_config:
+    max_retries: 3
+    backoff_factor: 2
+    status_codes_to_retry: [429, 500, 502, 503, 504]
+
+# Text-to-Speech Models
+tts_models:
+  # TTS-1 Model
+  - model_id: "tts-1"
+    display_name: "OpenAI TTS-1"
+    model_type: "standard"
+    description: "Standard quality text-to-speech model"
+    
+    voice_options:
+      - voice_id: "alloy"
+        gender: "neutral"
+        description: "Neutral, balanced voice"
+      - voice_id: "echo"
+        gender: "male"
+        description: "Male voice with clarity"
+      - voice_id: "fable"
+        gender: "neutral"
+        description: "Expressive and dynamic"
+      - voice_id: "onyx"
+        gender: "male"
+        description: "Deep male voice"
+      - voice_id: "nova"
+        gender: "female"
+        description: "Warm female voice"
+      - voice_id: "shimmer"
+        gender: "female"
+        description: "Gentle female voice"
+    
+    capabilities:
+      max_text_length: 4096
+      supported_formats: ["mp3", "opus", "aac", "flac"]
+      sample_rates: [22050, 24000, 44100, 48000]
+      streaming_support: false
+      prosody_control: false
+      emotion_control: false
+      
+    default_params:
+      voice: "alloy"
+      response_format: "mp3"
+      speed: 1.0  # 0.25 to 4.0
+      
+  # TTS-1-HD Model
+  - model_id: "tts-1-hd"
+    display_name: "OpenAI TTS-1-HD"
+    model_type: "high_definition"
+    description: "High definition text-to-speech model"
+    
+    voice_options:
+      - voice_id: "alloy"
+        gender: "neutral"
+        description: "Neutral, balanced voice (HD)"
+      - voice_id: "echo"
+        gender: "male"
+        description: "Male voice with clarity (HD)"
+      - voice_id: "fable"
+        gender: "neutral"
+        description: "Expressive and dynamic (HD)"
+      - voice_id: "onyx"
+        gender: "male"
+        description: "Deep male voice (HD)"
+      - voice_id: "nova"
+        gender: "female"
+        description: "Warm female voice (HD)"
+      - voice_id: "shimmer"
+        gender: "female"
+        description: "Gentle female voice (HD)"
+    
+    capabilities:
+      max_text_length: 4096
+      supported_formats: ["mp3", "opus", "aac", "flac"]
+      sample_rates: [22050, 24000, 44100, 48000]
+      streaming_support: false
+      prosody_control: false
+      emotion_control: false
+      
+    default_params:
+      voice: "alloy"
+      response_format: "mp3"
+      speed: 1.0
+
+# Speech-to-Text Models (Whisper)
+stt_models:
+  # Whisper-1 Model
+  - model_id: "whisper-1"
+    display_name: "OpenAI Whisper-1"
+    model_type: "general_purpose"
+    description: "Multilingual speech recognition model"
+    
+    capabilities:
+      max_audio_duration: 1500  # 25 minutes
+      max_file_size_mb: 25
+      supported_formats: ["mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm"]
+      sample_rates: [8000, 16000, 22050, 44100, 48000]
+      real_time_processing: false
+      batch_processing: true
+      multilingual: true
+      language_detection: true
+      translation_support: true
+      timestamp_support: true
+      
+    supported_languages:
+      - "en"  # English
+      - "zh"  # Chinese
+      - "de"  # German
+      - "es"  # Spanish
+      - "ru"  # Russian
+      - "ko"  # Korean
+      - "fr"  # French
+      - "ja"  # Japanese
+      - "pt"  # Portuguese
+      - "tr"  # Turkish
+      - "pl"  # Polish
+      - "ca"  # Catalan
+      - "nl"  # Dutch
+      - "ar"  # Arabic
+      - "sv"  # Swedish
+      - "it"  # Italian
+      - "id"  # Indonesian
+      - "hi"  # Hindi
+      - "fi"  # Finnish
+      - "vi"  # Vietnamese
+      - "he"  # Hebrew
+      - "uk"  # Ukrainian
+      - "el"  # Greek
+      - "ms"  # Malay
+      - "cs"  # Czech
+      - "ro"  # Romanian
+      - "da"  # Danish
+      - "hu"  # Hungarian
+      - "ta"  # Tamil
+      - "no"  # Norwegian
+      - "th"  # Thai
+      - "ur"  # Urdu
+      - "hr"  # Croatian
+      - "bg"  # Bulgarian
+      - "lt"  # Lithuanian
+      - "la"  # Latin
+      - "mi"  # Maori
+      - "ml"  # Malayalam
+      - "cy"  # Welsh
+      - "sk"  # Slovak
+      - "te"  # Telugu
+      - "fa"  # Persian
+      - "lv"  # Latvian
+      - "bn"  # Bengali
+      - "sr"  # Serbian
+      - "az"  # Azerbaijani
+      - "sl"  # Slovenian
+      - "kn"  # Kannada
+      - "et"  # Estonian
+      - "mk"  # Macedonian
+      - "br"  # Breton
+      - "eu"  # Basque
+      - "is"  # Icelandic
+      - "hy"  # Armenian
+      - "ne"  # Nepali
+      - "mn"  # Mongolian
+      - "bs"  # Bosnian
+      - "kk"  # Kazakh
+      - "sq"  # Albanian
+      - "sw"  # Swahili
+      - "gl"  # Galician
+      - "mr"  # Marathi
+      - "pa"  # Punjabi
+      - "si"  # Sinhala
+      - "km"  # Khmer
+      - "sn"  # Shona
+      - "yo"  # Yoruba
+      - "so"  # Somali
+      - "af"  # Afrikaans
+      - "oc"  # Occitan
+      - "ka"  # Georgian
+      - "be"  # Belarusian
+      - "tg"  # Tajik
+      - "sd"  # Sindhi
+      - "gu"  # Gujarati
+      - "am"  # Amharic
+      - "yi"  # Yiddish
+      - "lo"  # Lao
+      - "uz"  # Uzbek
+      - "fo"  # Faroese
+      - "ht"  # Haitian Creole
+      - "ps"  # Pashto
+      - "tk"  # Turkmen
+      - "nn"  # Nynorsk
+      - "mt"  # Maltese
+      - "sa"  # Sanskrit
+      - "lb"  # Luxembourgish
+      - "my"  # Myanmar
+      - "bo"  # Tibetan
+      - "tl"  # Tagalog
+      - "mg"  # Malagasy
+      - "as"  # Assamese
+      - "tt"  # Tatar
+      - "haw" # Hawaiian
+      - "ln"  # Lingala
+      - "ha"  # Hausa
+      - "ba"  # Bashkir
+      - "jw"  # Javanese
+      - "su"  # Sundanese
+      
+    default_params:
+      language: null  # Auto-detect
+      prompt: null
+      response_format: "json"  # json, text, srt, verbose_json, vtt
+      temperature: 0
+
+# Testing Configuration
+testing:
+  tts_test_params:
+    test_texts:
+      english:
+        - "OpenAI's text-to-speech technology produces natural-sounding audio."
+        - "The quick brown fox jumps over the lazy dog."
+        - "Artificial intelligence is transforming how we interact with technology."
+        - "This is a longer text to test the model's ability to handle extended passages with consistent quality and natural flow."
+        
+    voice_tests:
+      - voice: "alloy"
+        description: "Testing neutral voice"
+      - voice: "echo" 
+        description: "Testing male voice"
+      - voice: "nova"
+        description: "Testing female voice"
+        
+    speed_tests:
+      - speed: 0.5
+        description: "Slow speech"
+      - speed: 1.0
+        description: "Normal speech"
+      - speed: 1.5
+        description: "Fast speech"
+        
+    quality_thresholds:
+      min_audio_quality: 0.85
+      max_latency_ms: 5000
+      min_naturalness_score: 0.8
+      
+  stt_test_params:
+    test_audio_files:
+      multilingual:
+        - "data/audio/openai/english_sample.wav"
+        - "data/audio/openai/spanish_sample.wav"
+        - "data/audio/openai/french_sample.wav"
+        - "data/audio/openai/hindi_sample.wav"
+      quality_variations:
+        - "data/audio/openai/high_quality.wav"
+        - "data/audio/openai/medium_quality.wav"
+        - "data/audio/openai/low_quality.wav"
+        - "data/audio/openai/noisy_background.wav"
+        
+    format_tests:
+      - format: "mp3"
+        description: "MP3 format test"
+      - format: "wav"
+        description: "WAV format test"
+      - format: "flac"
+        description: "FLAC format test"
+        
+    accuracy_thresholds:
+      min_word_accuracy: 0.92
+      max_word_error_rate: 0.08
+      min_confidence_score: 0.85
+
+# Health Check Configuration
+health_check:
+  endpoints:
+    tts: "/audio/speech"
+    stt: "/audio/transcriptions"
+  timeout_seconds: 20
+  expected_status_codes: [200]
+  
+# Error Handling
+error_handling:
+  common_errors:
+    - error_code: "invalid_api_key"
+      description: "Invalid API key provided"
+      retry: false
+    - error_code: "rate_limit_exceeded"
+      description: "Rate limit exceeded"
+      retry: true
+      wait_time: 60
+    - error_code: "quota_exceeded"
+      description: "Usage quota exceeded"
+      retry: false
+    - error_code: "model_overloaded"
+      description: "Model is currently overloaded"
+      retry: true
+      wait_time: 30
+    - error_code: "invalid_request_error"
+      description: "Invalid request parameters"
+      retry: false
+      
+# Metadata
+metadata:
+  config_version: "1.0.0"
+  last_updated: "2024-01-01"
+  supported_languages_count: 99
+  whisper_model_size: "large-v3"
+  max_context_length: 4096
+  documentation_url: "https://platform.openai.com/docs/guides/speech-to-text"

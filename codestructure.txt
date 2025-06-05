@@ -1,0 +1,48 @@
+.
+├── clients
+│   ├── azure_client.py
+│   ├── base_client.py
+│   ├── chatterbox_client.py
+│   ├── client_factory.py
+│   ├── google_client.py
+│   ├── __init__.py
+│   ├── openai_client.py
+│   └── sarvam_client.py
+├── codestructure.txt
+├── configs
+│   ├── models
+│   │   ├── azure.yaml
+│   │   ├── chatterbox.yaml
+│   │   ├── google.yaml
+│   │   ├── openai.yaml
+│   │   └── sarvam.yaml
+│   └── test_config.yaml
+├── core
+│   ├── evaluator_factory.py
+│   ├── __init__.py
+│   ├── stt_evaluator.py
+│   └── tts_evaluator.py
+├── data
+│   ├── audio_samples
+│   ├── ground_truth
+│   └── text_samples
+├── main.py
+├── README.md
+├── requirements.txt
+├── results
+│   ├── html
+│   ├── json
+│   └── yaml
+├── test_executor.py
+├── tests
+│   ├── test_clients.py
+│   ├── test_stt_evaluator.py
+│   └── test_tts_evaluator.py
+└── utils
+    ├── audio_utils.py
+    ├── file_utils.py
+    ├── __init__.py
+    ├── logger.py
+    └── metrics_utils.py
+
+15 directories, 31 files

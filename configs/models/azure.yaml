@@ -1,0 +1,226 @@
+# Azure AI Speech Services Configuration
+# ====================================
+
+provider:
+  name: "Microsoft Azure"
+  description: "Azure Cognitive Services Speech"
+  website: "https://azure.microsoft.com/en-us/services/cognitive-services/speech-services/"
+  api_version: "v1.0"
+  
+# API Configuration
+api:
+  base_url: "https://{region}.tts.speech.microsoft.com"
+  stt_base_url: "https://{region}.stt.speech.microsoft.com"
+  authentication:
+    type: "subscription_key"
+    header_name: "Ocp-Apim-Subscription-Key"
+    env_variables:
+      subscription_key: "AZURE_SPEECH_KEY"
+      region: "AZURE_SPEECH_REGION"
+  
+  # Azure specific configuration
+  regions:
+    primary: "eastus"
+    fallback: ["westus2", "centralus"]
+    
+  rate_limits:
+    requests_per_minute: 200
+    requests_per_hour: 10000
+    concurrent_requests: 20
+    
+  retry_config:
+    max_retries: 3
+    backoff_factor: 1.5
+    status_codes_to_retry: [429, 500, 502, 503, 504]
+
+# Text-to-Speech Models
+tts_models:
+  # Neural voices - English
+  - model_id: "en-US-JennyNeural"
+    display_name: "Jenny Neural (English US)"
+    language: "en-US"
+    language_name: "English (United States)"
+    voice_type: "neural"
+    gender: "female"
+    age_group: "adult"
+    
+    capabilities:
+      max_text_length: 10000
+      supported_formats: ["wav", "mp3", "ogg"]
+      sample_rates: [8000, 16000, 24000, 48000]
+      ssml_support: true
+      prosody_control: true
+      emotion_styles: ["cheerful", "sad", "angry", "excited", "friendly"]
+      speaking_rates: [0.5, 2.0]
+      
+    default_params:
+      output_format: "riff-16khz-16bit-mono-pcm"
+      speaking_rate: 1.0
+      speaking_pitch: 1.0
+      volume: 1.0
+      style: "general"
+      
+  - model_id: "en-US-GuyNeural"
+    display_name: "Guy Neural (English US)"
+    language: "en-US"
+    language_name: "English (United States)"
+    voice_type: "neural"
+    gender: "male"
+    age_group: "adult"
+    
+    capabilities:
+      max_text_length: 10000
+      supported_formats: ["wav", "mp3", "ogg"]
+      sample_rates: [8000, 16000, 24000, 48000]
+      ssml_support: true
+      prosody_control: true
+      emotion_styles: ["newscast", "cheerful", "sad"]
+      speaking_rates: [0.5, 2.0]
+      
+    default_params:
+      output_format: "riff-16khz-16bit-mono-pcm"
+      speaking_rate: 1.0
+      speaking_pitch: 1.0
+      volume: 1.0
+      style: "general"
+      
+  # Hindi Neural voices
+  - model_id: "hi-IN-SwaraNeural"
+    display_name: "Swara Neural (Hindi India)"
+    language: "hi-IN"
+    language_name: "Hindi (India)"
+    voice_type: "neural"
+    gender: "female"
+    age_group: "adult"
+    
+    capabilities:
+      max_text_length: 10000
+      supported_formats: ["wav", "mp3", "ogg"]
+      sample_rates: [8000, 16000, 24000, 48000]
+      ssml_support: true
+      prosody_control: true
+      emotion_styles: ["cheerful", "empathetic"]
+      speaking_rates: [0.5, 2.0]
+      
+    default_params:
+      output_format: "riff-16khz-16bit-mono-pcm"
+      speaking_rate: 1.0
+      speaking_pitch: 1.0
+      volume: 1.0
+
+# Speech-to-Text Models
+stt_models:
+  # English STT
+  - model_id: "en-US-standard"
+    display_name: "English (US) Standard"
+    language: "en-US"
+    language_name: "English (United States)"
+    model_type: "standard"
+    
+    capabilities:
+      max_audio_duration: 600  # 10 minutes
+      supported_formats: ["wav", "mp3", "flac", "aac", "ogg"]
+      sample_rates: [8000, 16000, 44100, 48000]
+      real_time_processing: true
+      batch_processing: true
+      speaker_identification: true
+      confidence_scores: true
+      word_timestamps: true
+      profanity_filtering: true
+      
+    default_params:
+      language: "en-US"
+      profanity_filter: "masked"
+      enable_word_timestamps: true
+      enable_automatic_punctuation: true
+      
+  # Hindi STT
+  - model_id: "hi-IN-standard"
+    display_name: "Hindi (India) Standard"
+    language: "hi-IN"
+    language_name: "Hindi (India)"
+    model_type: "standard"
+    
+    capabilities:
+      max_audio_duration: 600
+      supported_formats: ["wav", "mp3", "flac", "aac", "ogg"]
+      sample_rates: [8000, 16000, 44100, 48000]
+      real_time_processing: true
+      batch_processing: true
+      speaker_identification: false
+      confidence_scores: true
+      word_timestamps: true
+      profanity_filtering: true
+      
+    default_params:
+      language: "hi-IN"
+      profanity_filter: "masked"
+      enable_word_timestamps: true
+      enable_automatic_punctuation: true
+
+# Testing Configuration
+testing:
+  tts_test_params:
+    test_texts:
+      english:
+        - "The quick brown fox jumps over the lazy dog."
+        - "Azure Speech Services provide high-quality text-to-speech capabilities."
+        - "Microsoft's neural voices sound remarkably human-like."
+      hindi:
+        - "नमस्ते, मैं Azure की आवाज़ हूँ।"
+        - "भारत में बोली जाने वाली हिंदी भाषा।"
+        - "माइक्रोसॉफ्ट की तकनीक बहुत उन्नत है।"
+        
+    quality_thresholds:
+      min_audio_quality: 0.8
+      max_latency_ms: 2000
+      min_naturalness_score: 0.8
+      min_intelligibility_score: 0.9
+      
+  stt_test_params:
+    test_audio_files:
+      english:
+        - "data/audio/azure/en_sample1.wav"
+        - "data/audio/azure/en_sample2.wav"
+        - "data/audio/azure/en_noisy.wav"
+      hindi:
+        - "data/audio/azure/hi_sample1.wav"
+        - "data/audio/azure/hi_sample2.wav"
+        
+    accuracy_thresholds:
+      min_word_accuracy: 0.90
+      max_word_error_rate: 0.10
+      min_confidence_score: 0.8
+
+# Health Check Configuration
+health_check:
+  endpoints:
+    tts: "/cognitiveservices/v1"
+    stt: "/speech/recognition/conversation/cognitiveservices/v1"
+  timeout_seconds: 15
+  expected_status_codes: [200]
+  
+# Error Handling
+error_handling:
+  common_errors:
+    - error_code: "InvalidApiKey"
+      description: "Invalid subscription key"
+      retry: false
+    - error_code: "QuotaExceeded"
+      description: "Quota exceeded for subscription"
+      retry: true
+      wait_time: 300
+    - error_code: "InvalidRegion"
+      description: "Invalid or unsupported region"
+      retry: false
+    - error_code: "UnsupportedLanguage"
+      description: "Language not supported"
+      retry: false
+      
+# Metadata
+metadata:
+  config_version: "1.0.0"
+  last_updated: "2024-01-01"
+  supported_languages: ["en-US", "hi-IN", "en-GB", "fr-FR", "de-DE", "es-ES"]
+  neural_voices_count: 200+
+  documentation_url: "https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/"

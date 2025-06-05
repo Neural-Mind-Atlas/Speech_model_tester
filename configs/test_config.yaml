@@ -1,0 +1,283 @@
+# TTS/STT Testing Framework Configuration
+# ==============================================
+
+# Framework Metadata
+framework:
+  name: "TTS-STT Testing Framework"
+  version: "1.0.0"
+  description: "Comprehensive testing framework for Text-to-Speech and Speech-to-Text models"
+  author: "AI Testing Team"
+  created_date: "2024-01-01"
+  last_modified: "2024-01-01"
+
+# Environment Configuration
+environment:
+  # Environment file path for API keys and secrets
+  env_file: ".env"
+  
+  # Logging Configuration
+  logging:
+    level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file_path: "logs/framework.log"
+    max_file_size: "10MB"
+    backup_count: 5
+    console_output: true
+    file_output: true
+
+# Test Configuration
+test_settings:
+  # Test execution settings
+  execution:
+    parallel_execution: true
+    max_workers: 4
+    timeout_seconds: 300
+    retry_attempts: 3
+    retry_delay_seconds: 2
+    
+  # Test data settings
+  data:
+    input_data_path: "data/test_inputs/"
+    output_data_path: "data/test_outputs/"
+    reference_data_path: "data/reference/"
+    temp_data_path: "data/temp/"
+    
+  # Audio settings for TTS/STT
+  audio:
+    sample_rate: 16000
+    channels: 1
+    bit_depth: 16
+    format: "wav"
+    max_duration_seconds: 60
+    min_duration_seconds: 1
+
+# Model Selection Configuration
+# Enable/disable models by commenting/uncommenting entire model sections
+models:
+  # Text-to-Speech Models
+  tts:
+    # Sarvam AI TTS Models
+    sarvam:
+      enabled: true
+      config_file: "configs/models/sarvam.yaml"
+      priority: 1
+      
+    # Azure AI TTS Models  
+    azure:
+      enabled: true
+      config_file: "configs/models/azure.yaml"
+      priority: 2
+      
+    # OpenAI TTS Models
+    openai:
+      enabled: true
+      config_file: "configs/models/openai.yaml"
+      priority: 3
+      
+    # Google TTS Models
+    google:
+      enabled: true
+      config_file: "configs/models/google.yaml"
+      priority: 4
+      
+    # Chatterbox TTS Models
+    chatterbox:
+      enabled: false  # Disabled by default
+      config_file: "configs/models/chatterbox.yaml"
+      priority: 5
+
+  # Speech-to-Text Models
+  stt:
+    # Sarvam AI STT Models
+    sarvam:
+      enabled: true
+      config_file: "configs/models/sarvam.yaml"
+      priority: 1
+      
+    # Azure AI STT Models
+    azure:
+      enabled: true
+      config_file: "configs/models/azure.yaml"
+      priority: 2
+      
+    # OpenAI STT Models (Whisper)
+    openai:
+      enabled: true
+      config_file: "configs/models/openai.yaml"
+      priority: 3
+      
+    # Google STT Models
+    google:
+      enabled: true
+      config_file: "configs/models/google.yaml"
+      priority: 4
+      
+    # Chatterbox STT Models
+    chatterbox:
+      enabled: false  # Disabled by default
+      config_file: "configs/models/chatterbox.yaml"
+      priority: 5
+
+# Testing Parameters
+testing:
+  # TTS Testing Parameters
+  tts:
+    # Quality metrics to evaluate
+    metrics:
+      - "audio_quality"      # Signal-to-noise ratio, clarity
+      - "naturalness"        # Human-like speech evaluation
+      - "intelligibility"    # Word recognition accuracy
+      - "prosody"           # Rhythm, stress, intonation
+      - "voice_consistency" # Consistency across generations
+      - "latency"           # Response time measurement
+      - "error_rate"        # API/generation error rate
+      
+    # Evaluation criteria
+    evaluation:
+      subjective_scoring: true
+      objective_metrics: true
+      comparative_analysis: true
+      
+    # Test scenarios
+    scenarios:
+      - "short_text"        # 1-10 words
+      - "medium_text"       # 11-50 words  
+      - "long_text"         # 51+ words
+      - "multilingual"      # Different languages
+      - "special_characters" # Numbers, symbols, punctuation
+      - "emotional_text"    # Different tones and emotions
+      
+  # STT Testing Parameters  
+  stt:
+    # Quality metrics to evaluate
+    metrics:
+      - "word_error_rate"   # WER calculation
+      - "character_error_rate" # CER calculation
+      - "accuracy"          # Overall transcription accuracy
+      - "latency"           # Processing time
+      - "confidence_score"  # Model confidence in transcription
+      - "language_detection" # Multi-language support
+      - "noise_robustness"  # Performance with background noise
+      
+    # Evaluation criteria
+    evaluation:
+      reference_transcripts: true
+      automated_metrics: true
+      error_analysis: true
+      
+    # Test scenarios
+    scenarios:
+      - "clear_speech"      # High quality audio
+      - "noisy_environment" # Background noise
+      - "accented_speech"   # Different accents
+      - "fast_speech"       # Rapid speaking
+      - "slow_speech"       # Deliberate speaking
+      - "whispered_speech"  # Low volume speech
+      - "multilingual"      # Different languages
+
+# Output Configuration
+output:
+  # Result formats to generate
+  formats:
+    yaml:
+      enabled: true
+      file_path: "results/test_results.yaml"
+      pretty_print: true
+      
+    json:
+      enabled: true
+      file_path: "results/test_results.json"
+      pretty_print: true
+      indent: 2
+      
+    html:
+      enabled: true
+      file_path: "results/test_results.html"
+      template: "templates/report_template.html"
+      include_charts: true
+      include_audio_samples: true
+      
+    csv:
+      enabled: true
+      file_path: "results/test_results.csv"
+      include_metadata: true
+
+  # Report settings
+  reports:
+    include_metadata: true
+    include_raw_data: false
+    include_error_logs: true
+    include_performance_metrics: true
+    include_comparative_analysis: true
+    timestamp_format: "%Y-%m-%d_%H-%M-%S"
+    
+  # Visualization settings
+  visualization:
+    generate_charts: true
+    chart_formats: ["png", "svg"]
+    include_audio_waveforms: true
+    include_spectrograms: false
+
+# Performance and Resource Management
+performance:
+  # Resource limits
+  max_memory_usage_mb: 2048
+  max_disk_usage_mb: 5120
+  max_concurrent_requests: 10
+  
+  # Caching settings
+  cache:
+    enabled: true
+    ttl_seconds: 3600
+    max_cache_size_mb: 512
+    cache_directory: "cache/"
+    
+  # Rate limiting
+  rate_limiting:
+    requests_per_minute: 60
+    burst_limit: 10
+    backoff_strategy: "exponential"
+
+# Monitoring and Health Checks
+monitoring:
+  health_checks:
+    enabled: true
+    interval_seconds: 300
+    timeout_seconds: 30
+    
+  # Performance monitoring
+  performance_tracking:
+    enabled: true
+    metrics_collection: true
+    alert_thresholds:
+      error_rate_threshold: 0.05
+      latency_threshold_ms: 5000
+      
+  # Alerting configuration
+  alerts:
+    enabled: false
+    webhook_url: ""
+    email_notifications: false
+
+# Security Configuration
+security:
+  # API key validation
+  validate_api_keys: true
+  
+  # SSL/TLS settings
+  ssl_verification: true
+  
+  # Request sanitization
+  sanitize_inputs: true
+  
+  # Data privacy
+  log_sensitive_data: false
+  anonymize_results: false
+
+# Development and Debug Settings
+development:
+  debug_mode: false
+  verbose_logging: false
+  save_intermediate_files: false
+  skip_validation: false
+  mock_api_responses: false

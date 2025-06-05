@@ -1,0 +1,207 @@
+# Sarvam AI Model Configuration
+# ===============================
+
+provider:
+  name: "Sarvam AI"
+  description: "Indian language focused AI models"
+  website: "https://www.sarvam.ai/"
+  api_version: "v1"
+  
+# API Configuration
+api:
+  base_url: "https://api.sarvam.ai"
+  authentication:
+    type: "api_key"
+    header_name: "Authorization"
+    prefix: "Bearer"
+    env_variable: "SARVAM_API_KEY"
+  
+  # Rate limiting specific to Sarvam
+  rate_limits:
+    requests_per_minute: 100
+    requests_per_hour: 1000
+    concurrent_requests: 5
+    
+  # Retry configuration
+  retry_config:
+    max_retries: 3
+    backoff_factor: 2
+    status_codes_to_retry: [429, 500, 502, 503, 504]
+
+# Text-to-Speech Models
+tts_models:
+  # Primary Hindi TTS model
+  - model_id: "sarvam-hindi-tts-v1"
+    display_name: "Sarvam Hindi TTS v1"
+    language: "hi"
+    language_name: "Hindi"
+    voice_options:
+      - voice_id: "female_1"
+        gender: "female"
+        age_group: "adult"
+        accent: "neutral"
+        description: "Natural female Hindi voice"
+      - voice_id: "male_1"
+        gender: "male"
+        age_group: "adult"
+        accent: "neutral"
+        description: "Natural male Hindi voice"
+    
+    # Model capabilities
+    capabilities:
+      max_text_length: 1000
+      supported_formats: ["wav", "mp3"]
+      sample_rates: [16000, 22050, 44100]
+      emotions: ["neutral", "happy", "sad"]
+      speaking_rates: [0.5, 1.0, 1.5, 2.0]
+      
+    # Default parameters
+    default_params:
+      voice_id: "female_1"
+      sample_rate: 16000
+      format: "wav"
+      emotion: "neutral"
+      speaking_rate: 1.0
+      volume: 1.0
+      
+  # English TTS model
+  - model_id: "sarvam-english-tts-v1"
+    display_name: "Sarvam English TTS v1"
+    language: "en"
+    language_name: "English"
+    voice_options:
+      - voice_id: "en_female_1"
+        gender: "female"
+        age_group: "adult"
+        accent: "indian"
+        description: "Indian English female voice"
+      - voice_id: "en_male_1"
+        gender: "male"
+        age_group: "adult"
+        accent: "indian"
+        description: "Indian English male voice"
+    
+    capabilities:
+      max_text_length: 1000
+      supported_formats: ["wav", "mp3"]
+      sample_rates: [16000, 22050, 44100]
+      emotions: ["neutral", "professional"]
+      speaking_rates: [0.7, 1.0, 1.3]
+      
+    default_params:
+      voice_id: "en_female_1"
+      sample_rate: 16000
+      format: "wav"
+      emotion: "neutral"
+      speaking_rate: 1.0
+
+# Speech-to-Text Models
+stt_models:
+  # Hindi STT model
+  - model_id: "sarvam-hindi-stt-v1"
+    display_name: "Sarvam Hindi STT v1"
+    language: "hi"
+    language_name: "Hindi"
+    
+    capabilities:
+      max_audio_duration: 300  # seconds
+      supported_formats: ["wav", "mp3", "flac"]
+      sample_rates: [8000, 16000, 44100]
+      real_time_processing: false
+      batch_processing: true
+      speaker_identification: false
+      confidence_scores: true
+      
+    default_params:
+      language: "hi"
+      model: "general"
+      enable_punctuation: true
+      enable_profanity_filter: false
+      
+  # English STT model
+  - model_id: "sarvam-english-stt-v1"
+    display_name: "Sarvam English STT v1"
+    language: "en"
+    language_name: "English"
+    
+    capabilities:
+      max_audio_duration: 300
+      supported_formats: ["wav", "mp3", "flac"]
+      sample_rates: [8000, 16000, 44100]
+      real_time_processing: false
+      batch_processing: true
+      speaker_identification: false
+      confidence_scores: true
+      
+    default_params:
+      language: "en"
+      model: "general"
+      enable_punctuation: true
+      enable_profanity_filter: false
+
+# Testing Configuration
+testing:
+  # TTS specific test parameters
+  tts_test_params:
+    test_texts:
+      hindi:
+        - "नमस्ते, आप कैसे हैं?"
+        - "मुझे हिंदी भाषा बहुत पसंद है।"
+        - "भारत एक विविधताओं से भरा देश है।"
+      english:
+        - "Hello, how are you today?"
+        - "The weather is quite pleasant."
+        - "Technology is advancing rapidly."
+        
+    quality_thresholds:
+      min_audio_quality: 0.7
+      max_latency_ms: 3000
+      min_naturalness_score: 0.6
+      
+  # STT specific test parameters  
+  stt_test_params:
+    test_audio_files:
+      hindi:
+        - "data/audio/hindi/sample1.wav"
+        - "data/audio/hindi/sample2.wav"
+      english:
+        - "data/audio/english/sample1.wav"
+        - "data/audio/english/sample2.wav"
+        
+    accuracy_thresholds:
+      min_word_accuracy: 0.85
+      max_word_error_rate: 0.15
+      min_confidence_score: 0.7
+
+# Health Check Configuration
+health_check:
+  endpoints:
+    tts: "/health/tts"
+    stt: "/health/stt"
+  timeout_seconds: 10
+  expected_status_codes: [200]
+  
+# Error Handling
+error_handling:
+  common_errors:
+    - error_code: "INVALID_API_KEY"
+      description: "Invalid or missing API key"
+      retry: false
+    - error_code: "RATE_LIMIT_EXCEEDED"
+      description: "API rate limit exceeded"
+      retry: true
+      wait_time: 60
+    - error_code: "TEXT_TOO_LONG"
+      description: "Input text exceeds maximum length"
+      retry: false
+    - error_code: "UNSUPPORTED_LANGUAGE"
+      description: "Language not supported by model"
+      retry: false
+      
+# Metadata
+metadata:
+  config_version: "1.0.0"
+  last_updated: "2024-01-01"
+  supported_languages: ["hi", "en"]
+  primary_focus: "Indian languages"
+  documentation_url: "https://docs.sarvam.ai/"

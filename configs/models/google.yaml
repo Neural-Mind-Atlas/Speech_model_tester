@@ -1,0 +1,386 @@
+# Google Cloud Speech and Text-to-Speech Configuration
+# =================================================
+
+provider:
+  name: "Google Cloud"
+  description: "Google Cloud Speech-to-Text and Text-to-Speech APIs"
+  website: "https://cloud.google.com/speech-to-text"
+  api_version: "v1"
+  
+# API Configuration
+api:
+  base_url: "https://texttospeech.googleapis.com/v1"
+  stt_base_url: "https://speech.googleapis.com/v1"
+  authentication:
+    type: "service_account"
+    env_variables:
+      credentials_path: "GOOGLE_APPLICATION_CREDENTIALS"
+      project_id: "GOOGLE_CLOUD_PROJECT_ID"
+  
+  rate_limits:
+    requests_per_minute: 1000
+    requests_per_hour: 100000
+    concurrent_requests: 100
+    
+  retry_config:
+    max_retries: 3
+    backoff_factor: 2
+    status_codes_to_retry: [429, 500, 502, 503, 504]
+
+# Text-to-Speech Models
+tts_models:
+  # Standard English voices
+  - model_id: "en-US-Standard-A"
+    display_name: "English US Standard Female A"
+    language: "en-US"
+    language_name: "English (United States)"
+    voice_type: "standard"
+    gender: "female"
+    
+    capabilities:
+      max_text_length: 5000
+      supported_formats: ["mp3", "wav", "ogg"]
+      sample_rates: [8000, 16000, 22050, 24000, 32000, 44100, 48000]
+      ssml_support: true
+      prosody_control: true
+      audio_profiles: ["wearable-class-device", "handset-class-device", "headphone-class-device", "small-bluetooth-speaker-class-device", "medium-bluetooth-speaker-class-device", "large-home-entertainment-class-device", "large-automotive-class-device", "telephony-class-application"]
+      
+    default_params:
+      audio_encoding: "MP3"
+      sample_rate_hertz: 16000
+      speaking_rate: 1.0
+      pitch: 0.0
+      volume_gain_db: 0.0
+      
+  - model_id: "en-US-Standard-B"
+    display_name: "English US Standard Male B"
+    language: "en-US"
+    language_name: "English (United States)"
+    voice_type: "standard"
+    gender: "male"
+    
+    capabilities:
+      max_text_length: 5000
+      supported_formats: ["mp3", "wav", "ogg"]
+      sample_rates: [8000, 16000, 22050, 24000, 32000, 44100, 48000]
+      ssml_support: true
+      prosody_control: true
+      audio_profiles: ["wearable-class-device", "handset-class-device", "headphone-class-device", "small-bluetooth-speaker-class-device", "medium-bluetooth-speaker-class-device", "large-home-entertainment-class-device", "large-automotive-class-device", "telephony-class-application"]
+      
+    default_params:
+      audio_encoding: "MP3"
+      sample_rate_hertz: 16000
+      speaking_rate: 1.0
+      pitch: 0.0
+      volume_gain_db: 0.0
+      
+  # Neural English voices
+  - model_id: "en-US-Neural2-A"
+    display_name: "English US Neural2 Female A"
+    language: "en-US"
+    language_name: "English (United States)"
+    voice_type: "neural2"
+    gender: "female"
+    
+    capabilities:
+      max_text_length: 5000
+      supported_formats: ["mp3", "wav", "ogg"]
+      sample_rates: [8000, 16000, 22050, 24000, 32000, 44100, 48000]
+      ssml_support: true
+      prosody_control: true
+      neural_quality: true
+      audio_profiles: ["wearable-class-device", "handset-class-device", "headphone-class-device", "small-bluetooth-speaker-class-device", "medium-bluetooth-speaker-class-device", "large-home-entertainment-class-device", "large-automotive-class-device", "telephony-class-application"]
+      
+    default_params:
+      audio_encoding: "MP3"
+      sample_rate_hertz: 24000
+      speaking_rate: 1.0
+      pitch: 0.0
+      volume_gain_db: 0.0
+      
+  # Hindi voices
+  - model_id: "hi-IN-Standard-A"
+    display_name: "Hindi India Standard Female A"
+    language: "hi-IN"
+    language_name: "Hindi (India)"
+    voice_type: "standard"
+    gender: "female"
+    
+    capabilities:
+      max_text_length: 5000
+      supported_formats: ["mp3", "wav", "ogg"]
+      sample_rates: [8000, 16000, 22050, 24000, 32000, 44100, 48000]
+      ssml_support: true
+      prosody_control: true
+      
+    default_params:
+      audio_encoding: "MP3"
+      sample_rate_hertz: 16000
+      speaking_rate: 1.0
+      pitch: 0.0
+      volume_gain_db: 0.0
+
+# Speech-to-Text Models
+stt_models:
+  # Latest English model
+  - model_id: "latest_long"
+    display_name: "Latest Long Audio Model"
+    language: "en-US"
+    language_name: "English (United States)"
+    model_type: "latest"
+    
+    capabilities:
+      max_audio_duration: 28800  # 8 hours
+      supported_formats: ["wav", "flac", "mp3", "ogg", "amr", "awb"]
+      sample_rates: [8000, 12000, 16000, 24000, 48000]
+      real_time_processing: true
+      batch_processing: true
+      speaker_identification: true
+      confidence_scores: true
+      word_timestamps: true
+      automatic_punctuation: true
+      profanity_filtering: true
+      spoken_punctuation: true
+      spoken_emojis: true
+      
+    default_params:
+      language_code: "en-US"
+      enable_automatic_punctuation: true
+      enable_word_time_offsets: true
+      enable_word_confidence: true
+      enable_speaker_diarization: false
+      diarization_speaker_count: 2
+      profanity_filter: true
+      
+  # Hindi model
+  - model_id: "latest_long"
+    display_name: "Latest Long Audio Model (Hindi)"
+    language: "hi-IN"
+    language_name: "Hindi (India)"
+    model_type: "latest"
+    
+    capabilities:
+      max_audio_duration: 28800
+      supported_formats: ["wav", "flac", "mp3", "ogg", "amr", "awb"]
+      sample_rates: [8000, 12000, 16000, 24000, 48000]
+      real_time_processing: true
+      batch_processing: true
+      speaker_identification: true
+      confidence_scores: true
+      word_timestamps: true
+      automatic_punctuation: true
+      profanity_filtering: true
+      
+    default_params:
+      language_code: "hi-IN"
+      enable_automatic_punctuation: true
+      enable_word_time_offsets: true
+      enable_word_confidence: true
+      enable_speaker_diarization: false
+      profanity_filter: true
+      
+  # Chirp model for multilingual
+  - model_id: "chirp"
+    display_name: "Chirp Universal Model"
+    language: "multilingual"
+    language_name: "Multilingual (100+ languages)"
+    model_type: "chirp"
+    
+    capabilities:
+      max_audio_duration: 28800
+      supported_formats: ["wav", "flac", "mp3", "ogg"]
+      sample_rates: [8000, 16000, 48000]
+      real_time_processing: true
+      batch_processing: true
+      multilingual: true
+      language_detection: true
+      confidence_scores: true
+      word_timestamps: true
+      
+    supported_languages:
+      - "af" # Afrikaans
+      - "am" # Amharic
+      - "ar" # Arabic
+      - "as" # Assamese
+      - "az" # Azerbaijani
+      - "be" # Belarusian
+      - "bg" # Bulgarian
+      - "bn" # Bengali
+      - "bo" # Tibetan
+      - "bs" # Bosnian
+      - "ca" # Catalan
+      - "cs" # Czech
+      - "cy" # Welsh
+      - "da" # Danish
+      - "de" # German
+      - "el" # Greek
+      - "en" # English
+      - "es" # Spanish
+      - "et" # Estonian
+      - "eu" # Basque
+      - "fa" # Persian
+      - "fi" # Finnish
+      - "fil" # Filipino
+      - "fr" # French
+      - "gl" # Galician
+      - "gu" # Gujarati
+      - "ha" # Hausa
+      - "he" # Hebrew
+      - "hi" # Hindi
+      - "hr" # Croatian
+      - "hu" # Hungarian
+      - "hy" # Armenian
+      - "id" # Indonesian
+      - "is" # Icelandic
+      - "it" # Italian
+      - "ja" # Japanese
+      - "jv" # Javanese
+      - "ka" # Georgian
+      - "kk" # Kazakh
+      - "km" # Khmer
+      - "kn" # Kannada
+      - "ko" # Korean
+      - "lo" # Lao
+      - "lt" # Lithuanian
+      - "lv" # Latvian
+      - "mk" # Macedonian
+      - "ml" # Malayalam
+      - "mn" # Mongolian
+      - "mr" # Marathi
+      - "ms" # Malay
+      - "mt" # Maltese
+      - "my" # Myanmar
+      - "ne" # Nepali
+      - "nl" # Dutch
+      - "no" # Norwegian
+      - "or" # Odia
+      - "pa" # Punjabi
+      - "pl" # Polish
+      - "ps" # Pashto
+      - "pt" # Portuguese
+      - "ro" # Romanian
+      - "ru" # Russian
+      - "sa" # Sanskrit
+      - "sd" # Sindhi
+      - "si" # Sinhala
+      - "sk" # Slovak
+      - "sl" # Slovenian
+      - "so" # Somali
+      - "sq" # Albanian
+      - "sr" # Serbian
+      - "su" # Sundanese
+      - "sv" # Swedish
+      - "sw" # Swahili
+      - "ta" # Tamil
+      - "te" # Telugu
+      - "tg" # Tajik
+      - "th" # Thai
+      - "tk" # Turkmen
+      - "tr" # Turkish
+      - "tt" # Tatar
+      - "uk" # Ukrainian
+      - "ur" # Urdu
+      - "uz" # Uzbek
+      - "vi" # Vietnamese
+      - "yo" # Yoruba
+      - "zh" # Chinese
+      - "zu" # Zulu
+      
+    default_params:
+      language_code: "auto"  # Auto-detect
+      enable_automatic_punctuation: true
+      enable_word_time_offsets: true
+      enable_word_confidence: true
+
+# Testing Configuration
+testing:
+  tts_test_params:
+    test_texts:
+      english:
+        - "Google Cloud Text-to-Speech converts text into natural-sounding speech."
+        - "The advanced neural models provide high-quality audio output."
+        - "This service supports over 40 languages and variants."
+      hindi:
+        - "गूगल क्लाउड टेक्स्ट-टू-स्पीच सेवा उत्कृष्ट है।"
+        - "यह हिंदी भाषा को बहुत अच्छी तरह से समझती है।"
+        - "आर्टिफिशियल इंटेलिजेंस का भविष्य उज्ज्वल है।"
+        
+    voice_tests:
+      - voice: "en-US-Standard-A"
+        description: "Standard female voice"
+      - voice: "en-US-Neural2-A"
+        description: "Neural female voice"
+      - voice: "hi-IN-Standard-A"
+        description: "Hindi female voice"
+        
+    audio_profile_tests:
+      - profile: "telephony-class-application"
+        description: "Optimized for phone calls"
+      - profile: "headphone-class-device"
+        description: "Optimized for headphones"
+        
+    quality_thresholds:
+      min_audio_quality: 0.85
+      max_latency_ms: 3000
+      min_naturalness_score: 0.8
+      
+  stt_test_params:
+    test_audio_files:
+      english:
+        - "data/audio/google/en_clear.wav"
+        - "data/audio/google/en_noisy.wav"
+        - "data/audio/google/en_accented.wav"
+      hindi:
+        - "data/audio/google/hi_clear.wav"
+        - "data/audio/google/hi_noisy.wav"
+      multilingual:
+        - "data/audio/google/multi_lang.wav"
+        
+    model_tests:
+      - model: "latest_long"
+        description: "Latest long audio model"
+      - model: "chirp"
+        description: "Universal multilingual model"
+        
+    accuracy_thresholds:
+      min_word_accuracy: 0.90
+      max_word_error_rate: 0.10
+      min_confidence_score: 0.80
+
+# Health Check Configuration
+health_check:
+  endpoints:
+    tts: "/v1/text:synthesize"
+    stt: "/v1/speech:recognize"
+  timeout_seconds: 15
+  expected_status_codes: [200]
+  
+# Error Handling
+error_handling:
+  common_errors:
+    - error_code: "UNAUTHENTICATED"
+      description: "Invalid or missing authentication"
+      retry: false
+    - error_code: "PERMISSION_DENIED"
+      description: "Insufficient permissions"
+      retry: false
+    - error_code: "QUOTA_EXCEEDED"
+      description: "Quota exceeded"
+      retry: true
+      wait_time: 300
+    - error_code: "INVALID_ARGUMENT"
+      description: "Invalid request parameters"
+      retry: false
+    - error_code: "DEADLINE_EXCEEDED"
+      description: "Request timeout"
+      retry: true
+      wait_time: 10
+      
+# Metadata
+metadata:
+  config_version: "1.0.0"
+  last_updated: "2024-01-01"
+  supported_languages_count: 100+
+  neural_voices_available: true
+  max_ssml_length: 5000
+  documentation_url: "https://cloud.google.com/text-to-speech/docs"
