@@ -677,8 +677,7 @@
 #     return test_cases
 
 
-# Create core/tts_evaluator.py
-tts_evaluator_content = '''"""
+"""
 TTS/STT Testing Framework - TTS Evaluator
 
 This module provides comprehensive evaluation capabilities for Text-to-Speech models.
