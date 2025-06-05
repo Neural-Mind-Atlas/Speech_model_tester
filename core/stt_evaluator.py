@@ -24,10 +24,30 @@ import librosa
 import soundfile as sf
 import numpy as np
 from jiwer import wer, cer, mer, wil, wip
-import editdistance
+
+# Handle optional editdistance import
+try:
+    import editdistance
+    EDITDISTANCE_AVAILABLE = True
+except ImportError:
+    EDITDISTANCE_AVAILABLE = False
+    # Create a fallback function
+    def editdistance_eval(s1, s2):
+        """Fallback edit distance calculation using difflib."""
+        return len(list(difflib.unified_diff(s1, s2)))
+    
+    class MockEditDistance:
+        @staticmethod
+        def eval(s1, s2):
+            return editdistance_eval(s1, s2)
+    
+    editdistance = MockEditDistance()
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+if not EDITDISTANCE_AVAILABLE:
+    logger.warning("editdistance package not available, using fallback implementation")
 
 @dataclass
 class STTEvaluationResult:

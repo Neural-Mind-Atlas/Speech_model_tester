@@ -642,6 +642,45 @@ class AudioProcessor:
         
         return recommendations
 
+
+class AudioValidator:
+    """
+    Audio file validation class for the TTS/STT testing framework.
+    
+    This is a simplified validator that wraps AudioProcessor functionality.
+    """
+    
+    def __init__(self):
+        """Initialize the audio validator."""
+        self.logger = get_logger(__name__)
+        self.processor = AudioProcessor()
+        
+    def validate_audio_file(self, file_path: Union[str, Path]) -> Dict[str, Any]:
+        """
+        Validate audio file.
+        
+        Args:
+            file_path: Path to the audio file
+            
+        Returns:
+            Dict[str, Any]: Validation results
+        """
+        return self.processor.validate_audio_file(file_path)
+    
+    def is_valid_audio_file(self, file_path: Union[str, Path]) -> bool:
+        """
+        Check if audio file is valid.
+        
+        Args:
+            file_path: Path to the audio file
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        result = self.validate_audio_file(file_path)
+        return result.get('is_valid', False)
+
+
 # Convenience functions
 def validate_audio_file(file_path: Union[str, Path]) -> bool:
     """Validate audio file using default AudioProcessor."""

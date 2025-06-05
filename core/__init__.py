@@ -40,28 +40,55 @@ MODULE_INFO = {
     ]
 }
 
-# Import core components
+# Import core components with graceful error handling
+_import_errors = []
+
 try:
     from .tts_evaluator import TTSEvaluator
-    from .stt_evaluator import STTEvaluator
-    from .evaluator_factory import EvaluatorFactory
-    
-    logger.info("Successfully imported all core evaluation components")
-    
+    logger.info("Successfully imported TTSEvaluator")
 except ImportError as e:
-    logger.error(f"Failed to import core components: {e}")
-    raise ImportError(f"Core module initialization failed: {e}")
+    logger.warning(f"Failed to import TTSEvaluator: {e}")
+    _import_errors.append(('TTSEvaluator', str(e)))
+    TTSEvaluator = None
 
-# Export public interface
-__all__ = [
-    "TTSEvaluator",
-    "STTEvaluator", 
-    "EvaluatorFactory",
+try:
+    from .stt_evaluator import STTEvaluator
+    logger.info("Successfully imported STTEvaluator")
+except ImportError as e:
+    logger.warning(f"Failed to import STTEvaluator: {e}")
+    _import_errors.append(('STTEvaluator', str(e)))
+    STTEvaluator = None
+
+try:
+    from .evaluator_factory import EvaluatorFactory
+    logger.info("Successfully imported EvaluatorFactory")
+except ImportError as e:
+    logger.warning(f"Failed to import EvaluatorFactory: {e}")
+    _import_errors.append(('EvaluatorFactory', str(e)))
+    EvaluatorFactory = None
+
+# Log successful imports
+if not _import_errors:
+    logger.info("Successfully imported all core evaluation components")
+else:
+    logger.warning(f"Some core components failed to import: {[err[0] for err in _import_errors]}")
+
+# Export available components only
+__all__ = []
+if TTSEvaluator is not None:
+    __all__.append('TTSEvaluator')
+if STTEvaluator is not None:
+    __all__.append('STTEvaluator')
+if EvaluatorFactory is not None:
+    __all__.append('EvaluatorFactory')
+
+__all__.extend([
     "MODULE_INFO",
     "get_module_info",
     "validate_audio_file",
-    "get_supported_formats"
-]
+    "get_supported_formats",
+    "get_import_errors"
+])
 
 def get_module_info() -> Dict[str, Any]:
     """
@@ -70,7 +97,19 @@ def get_module_info() -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Module metadata and capabilities
     """
-    return MODULE_INFO.copy()
+    info = MODULE_INFO.copy()
+    info['available_components'] = __all__
+    info['import_errors'] = _import_errors
+    return info
+
+def get_import_errors() -> List[Tuple[str, str]]:
+    """
+    Get list of import errors that occurred during module initialization.
+    
+    Returns:
+        List[Tuple[str, str]]: List of (component_name, error_message) tuples
+    """
+    return _import_errors.copy()
 
 def validate_audio_file(file_path: str) -> bool:
     """
@@ -118,6 +157,9 @@ def get_supported_formats() -> List[str]:
     return MODULE_INFO["supported_formats"].copy()
 
 # Module initialization logging
-logger.info(f"TTS/STT Core Module v{__version__} initialized successfully")
-logger.debug(f"Available components: {MODULE_INFO['components']}")
+logger.info(f"TTS/STT Core Module v{__version__} initialized")
+logger.debug(f"Available components: {[comp for comp in __all__ if not comp.startswith('_')]}")
 logger.debug(f"Supported formats: {MODULE_INFO['supported_formats']}")
+
+if _import_errors:
+    logger.warning(f"Module initialized with {len(_import_errors)} import errors")

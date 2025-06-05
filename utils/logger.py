@@ -266,7 +266,7 @@ class JSONFormatter(logging.Formatter):
 _global_logger: Optional[FrameworkLogger] = None
 
 def setup_logging(
-    log_level: Union[str, int, LogLevel] = LogLevel.INFO,
+    level: Union[str, int, LogLevel] = LogLevel.INFO,  # Changed parameter name from log_level to level
     log_dir: Optional[str] = None,
     enable_console: bool = True,
     enable_file: bool = True,
@@ -276,7 +276,7 @@ def setup_logging(
     Set up global logging configuration.
     
     Args:
-        log_level: Global logging level
+        level: Global logging level (changed from log_level to level)
         log_dir: Directory for log files
         enable_console: Enable console logging
         enable_file: Enable file logging
@@ -287,7 +287,7 @@ def setup_logging(
     try:
         _global_logger = FrameworkLogger(
             name="tts_stt_framework",
-            log_level=log_level,
+            log_level=level,  # Use level parameter
             log_dir=log_dir,
             enable_console=enable_console,
             enable_file=enable_file,

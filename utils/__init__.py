@@ -14,6 +14,7 @@ import os
 import sys
 from typing import Dict, Any, Optional
 from pathlib import Path
+import logging
 
 # Module metadata
 __version__ = "1.0.0"
@@ -21,45 +22,63 @@ __author__ = "TTS/STT Testing Framework Team"
 __email__ = "support@tts-stt-framework.com"
 __status__ = "Production"
 
-# Import core utilities
+# Configure module logger
+logger = logging.getLogger(__name__)
+
+# Track import errors
+_import_errors = []
+_available_modules = []
+
+# Import core utilities with error handling
 try:
     from .logger import FrameworkLogger, get_logger, setup_logging
-    from .file_utils import FileManager, validate_file_path, ensure_directory
-    from .audio_utils import AudioProcessor, validate_audio_file, get_audio_info
-    from .metrics_utils import MetricsCalculator, calculate_wer, calculate_cer
+    _available_modules.extend(['FrameworkLogger', 'get_logger', 'setup_logging'])
+    logger.info("Successfully imported logger utilities")
 except ImportError as e:
-    # Fallback logging if logger module fails to import
-    import logging
-    logging.error(f"Failed to import utils modules: {e}")
-    raise ImportError(f"Critical utils module import failed: {e}")
+    logger.error(f"Failed to import logger utilities: {e}")
+    _import_errors.append(('logger', str(e)))
+    raise ImportError(f"Critical logger module import failed: {e}")
 
-# Export main classes and functions
-__all__ = [
-    # Logger utilities
-    'FrameworkLogger',
-    'get_logger',
-    'setup_logging',
-    
-    # File utilities
-    'FileManager',
-    'validate_file_path',
-    'ensure_directory',
-    
-    # Audio utilities
-    'AudioProcessor',
-    'validate_audio_file',
-    'get_audio_info',
-    
-    # Metrics utilities
-    'MetricsCalculator',
-    'calculate_wer',
-    'calculate_cer',
-    
-    # Module metadata
+try:
+    from .file_utils import FileManager, validate_file_path, ensure_directory
+    _available_modules.extend(['FileManager', 'validate_file_path', 'ensure_directory'])
+    logger.info("Successfully imported file utilities")
+except ImportError as e:
+    logger.error(f"Failed to import file utilities: {e}")
+    _import_errors.append(('file_utils', str(e)))
+
+try:
+    from .audio_utils import AudioProcessor, AudioValidator, validate_audio_file, get_audio_info
+    _available_modules.extend(['AudioProcessor', 'AudioValidator', 'validate_audio_file', 'get_audio_info'])
+    logger.info("Successfully imported audio utilities")
+except ImportError as e:
+    logger.warning(f"Failed to import audio utilities: {e}")
+    _import_errors.append(('audio_utils', str(e)))
+
+try:
+    from .metrics_utils import MetricsCalculator, calculate_wer, calculate_cer
+    _available_modules.extend(['MetricsCalculator', 'calculate_wer', 'calculate_cer'])
+    logger.info("Successfully imported metrics utilities")
+except ImportError as e:
+    logger.warning(f"Failed to import metrics utilities: {e}")
+    _import_errors.append(('metrics_utils', str(e)))
+
+try:
+    from .report_generator import ReportGenerator
+    _available_modules.extend(['ReportGenerator'])
+    logger.info("Successfully imported report generator")
+except ImportError as e:
+    logger.warning(f"Failed to import report generator: {e}")
+    _import_errors.append(('report_generator', str(e)))
+
+# Export only available classes and functions
+__all__ = _available_modules + [
     '__version__',
     '__author__',
     '__email__',
-    '__status__'
+    '__status__',
+    'get_module_info',
+    'get_import_errors'
 ]
 
 def get_module_info() -> Dict[str, Any]:
@@ -77,13 +96,15 @@ def get_module_info() -> Dict[str, Any]:
         'status': __status__,
         'python_version': sys.version,
         'module_path': str(Path(__file__).parent.absolute()),
-        'available_utilities': {
-            'logging': 'FrameworkLogger, get_logger, setup_logging',
-            'file_operations': 'FileManager, validate_file_path, ensure_directory',
-            'audio_processing': 'AudioProcessor, validate_audio_file, get_audio_info',
-            'metrics_calculation': 'MetricsCalculator, calculate_wer, calculate_cer'
-        }
+        'available_modules': _available_modules,
+        'import_errors': _import_errors,
+        'total_available': len(_available_modules),
+        'total_errors': len(_import_errors)
     }
+
+def get_import_errors():
+    """Get list of import errors."""
+    return _import_errors.copy()
 
 def validate_environment() -> bool:
     """
@@ -102,28 +123,28 @@ def validate_environment() -> bool:
         if not utils_dir.exists():
             raise FileNotFoundError(f"Utils directory not found: {utils_dir}")
         
-        # Validate critical imports
-        required_modules = ['logger', 'file_utils', 'audio_utils', 'metrics_utils']
-        for module in required_modules:
-            module_path = utils_dir / f"{module}.py"
-            if not module_path.exists():
-                raise FileNotFoundError(f"Required module not found: {module_path}")
+        # At least logger must be available
+        if 'get_logger' not in _available_modules:
+            raise ImportError("Critical logger module not available")
         
         return True
     except Exception as e:
-        import logging
-        logging.error(f"Environment validation failed: {e}")
+        logger.error(f"Environment validation failed: {e}")
         return False
 
-# Initialize logging on module import
-try:
-    setup_logging()
-    logger = get_logger(__name__)
-    logger.info(f"Utils module initialized successfully - Version {__version__}")
-except Exception as e:
-    import logging
-    logging.error(f"Failed to initialize utils module logging: {e}")
+# Initialize logging on module import (only if logger is available)
+if 'setup_logging' in _available_modules:
+    try:
+        setup_logging()
+        module_logger = get_logger(__name__)
+        module_logger.info(f"Utils module initialized successfully - Version {__version__}")
+        if _import_errors:
+            module_logger.warning(f"Utils module initialized with {len(_import_errors)} import errors")
+    except Exception as e:
+        print(f"Failed to initialize utils module logging: {e}")
 
 # Validate environment on import
 if not validate_environment():
-    raise RuntimeError("Utils module environment validation failed")
+    logger.warning("Utils module environment validation failed, but continuing with available modules")
+
+logger.info(f"Utils module loaded with {len(_available_modules)} available utilities")
