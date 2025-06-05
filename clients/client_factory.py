@@ -620,9 +620,11 @@ Provides centralized client instantiation with configuration management
 
 import os
 import importlib
-from typing import Dict, Any, Optional, List, Type, Union
+from typing import Dict, Any, Optional, List, Type
 import logging
 import traceback
+
+from .base_client import BaseTTSSTTClient
 
 logger = logging.getLogger(__name__)
 
@@ -632,152 +634,129 @@ class ClientFactory:
     Manages client creation for different provider types and models.
     """
     
-    # Registry of available client types
-    _client_registry = {
-        'openai': 'clients.openai_client.OpenAIClient',
-        'azure': 'clients.azure_client.AzureClient', 
-        'google': 'clients.google_client.GoogleClient',
-        'sarvam': 'clients.sarvam_client.SarvamClient',
-        'chatterbox': 'clients.chatterbox_client.ChatterboxClient'
-    }
+    def __init__(self, config: Any):
+        """
+        Initialize the client factory with configuration.
+        
+        Args:
+            config: Configuration object containing provider settings
+        """
+        self.config = config
+        self.available_clients = {}
+        self._import_errors = []
+        
+        # Import available clients with error handling
+        self._load_available_clients()
+        
+        logger.info(f"ClientFactory initialized with {len(self.available_clients)} available clients")
+        if self._import_errors:
+            logger.warning(f"Some clients failed to import: {[err[0] for err in self._import_errors]}")
     
-    @classmethod
-    def create_client(cls, provider: str, model_name: str, config: Dict[str, Any]):
+    def _load_available_clients(self):
+        """Load available client classes with graceful error handling."""
+        client_modules = {
+            'sarvam': ('sarvam_client', 'SarvamClient'),
+            'chatterbox': ('chatterbox_client', 'ChatterboxClient'),
+            'openai': ('openai_client', 'OpenAIClient'),
+            'azure': ('azure_client', 'AzureClient'),
+            'google': ('google_client', 'GoogleClient')
+        }
+        
+        for provider, (module_name, class_name) in client_modules.items():
+            try:
+                module = importlib.import_module(f'.{module_name}', package='clients')
+                client_class = getattr(module, class_name)
+                self.available_clients[provider] = client_class
+                logger.debug(f"Successfully loaded {provider} client")
+            except ImportError as e:
+                self._import_errors.append((class_name, str(e)))
+                logger.warning(f"Failed to import {class_name}: {e}")
+            except AttributeError as e:
+                self._import_errors.append((class_name, f"Class not found: {e}"))
+                logger.warning(f"Class {class_name} not found in module {module_name}")
+    
+    def get_available_providers(self) -> List[str]:
+        """Get list of available provider names."""
+        return list(self.available_clients.keys())
+    
+    def create_client(self, provider: str, model_name: str = None, **kwargs) -> BaseTTSSTTClient:
         """
         Create a client instance for the specified provider.
         
         Args:
             provider: Provider name (e.g., 'openai', 'azure', 'google')
-            model_name: Model name/identifier
-            config: Configuration dictionary for the client
+            model_name: Optional model name
+            **kwargs: Additional configuration parameters
             
         Returns:
-            Client instance
+            BaseTTSSTTClient: Configured client instance
             
         Raises:
-            ValueError: If provider is not supported or config is invalid
-            ImportError: If required dependencies are not available
+            ValueError: If provider is not available
+            Exception: If client creation fails
         """
-        if not config:
-            raise ValueError("Client configuration is required")
-            
-        provider = provider.lower()
-        
-        if provider not in cls._client_registry:
-            available = list(cls._client_registry.keys())
-            raise ValueError(f"Unsupported client provider: {provider}. Available: {available}")
+        if provider not in self.available_clients:
+            available = ', '.join(self.available_clients.keys())
+            raise ValueError(f"Provider '{provider}' not available. Available providers: {available}")
         
         try:
-            # Import the client class dynamically
-            module_path, class_name = cls._client_registry[provider].rsplit('.', 1)
-            module = importlib.import_module(module_path)
-            client_class = getattr(module, class_name)
+            client_class = self.available_clients[provider]
             
-            # Create and return client instance
-            logger.info(f"Creating {provider} client with model: {model_name}")
-            return client_class(model_name, config)
+            # Get provider configuration
+            provider_config = self._get_provider_config(provider)
+            provider_config.update(kwargs)
             
-        except ImportError as e:
-            error_msg = f"Failed to import {provider} client: {e}"
-            logger.error(error_msg)
-            raise ImportError(error_msg)
-        except AttributeError as e:
-            error_msg = f"Client class not found for {provider}: {e}"
-            logger.error(error_msg)
-            raise ImportError(error_msg)
+            # Create client instance
+            if model_name:
+                client = client_class(model_name, provider_config)
+            else:
+                # Use default model from config or provider default
+                default_model = provider_config.get('default_model', 'default')
+                client = client_class(default_model, provider_config)
+            
+            logger.info(f"Created {provider} client successfully")
+            return client
+            
         except Exception as e:
-            error_msg = f"Failed to create {provider} client: {e}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+            logger.error(f"Failed to create {provider} client: {e}")
+            raise
     
-    @classmethod
-    def get_available_providers(cls) -> List[str]:
-        """
-        Get list of available provider names.
+    def _get_provider_config(self, provider: str) -> Dict[str, Any]:
+        """Get configuration for a specific provider."""
+        # Try to get provider config from the main config
+        if hasattr(self.config, 'to_dict'):
+            config_dict = self.config.to_dict()
+        elif hasattr(self.config, 'dict'):
+            config_dict = self.config.dict()
+        else:
+            config_dict = {}
         
-        Returns:
-            List of available provider names
-        """
-        return list(cls._client_registry.keys())
+        # Look for provider-specific config
+        provider_config = config_dict.get(provider, {})
+        
+        # Add common configuration
+        provider_config.update({
+            'provider': provider,
+            'max_retries': config_dict.get('max_retries', 3),
+            'timeout': config_dict.get('timeout_seconds', 300),
+        })
+        
+        return provider_config
     
-    @classmethod
-    def is_provider_available(cls, provider: str) -> bool:
-        """
-        Check if a provider is available.
+    def health_check_all(self) -> Dict[str, bool]:
+        """Perform health check on all available clients."""
+        results = {}
         
-        Args:
-            provider: Provider name to check
-            
-        Returns:
-            True if provider is available, False otherwise
-        """
-        return provider.lower() in cls._client_registry
-    
-    @classmethod
-    def create_clients_from_config(cls, providers_config: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Create multiple clients from a configuration dictionary.
-        
-        Args:
-            providers_config: Dictionary with provider configs
-            
-        Returns:
-            Dictionary of created clients
-        """
-        clients = {}
-        
-        for provider, config in providers_config.items():
-            if not config.get('enabled', True):
-                logger.info(f"Skipping disabled provider: {provider}")
-                continue
-                
+        for provider in self.available_clients:
             try:
-                model_name = config.get('model_name', f"{provider}_default")
-                client = cls.create_client(provider, model_name, config)
-                clients[provider] = client
-                logger.info(f"Successfully created {provider} client")
+                client = self.create_client(provider)
+                results[provider] = client.health_check()
             except Exception as e:
-                logger.error(f"Failed to create {provider} client: {e}")
-                continue
+                logger.error(f"Health check failed for {provider}: {e}")
+                results[provider] = False
         
-        return clients
+        return results
     
-    @classmethod
-    def validate_config(cls, provider: str, config: Dict[str, Any]) -> bool:
-        """
-        Validate configuration for a specific provider.
-        
-        Args:
-            provider: Provider name
-            config: Configuration to validate
-            
-        Returns:
-            True if config is valid, False otherwise
-        """
-        if not config:
-            return False
-            
-        provider = provider.lower()
-        
-        # Common required fields
-        required_fields = ['api_key']
-        
-        # Provider-specific required fields
-        provider_requirements = {
-            'azure': ['region'],
-            'google': ['project_id'],
-            'openai': [],  # Only api_key required
-            'sarvam': [],  # Only api_key required
-            'chatterbox': []  # Only api_key required
-        }
-        
-        if provider in provider_requirements:
-            required_fields.extend(provider_requirements[provider])
-        
-        # Check required fields
-        for field in required_fields:
-            if field not in config or not config[field]:
-                logger.error(f"Missing required field '{field}' for {provider} client")
-                return False
-        
-        return True
+    def get_import_errors(self) -> List[Tuple[str, str]]:
+        """Get list of import errors that occurred during initialization."""
+        return self._import_errors.copy()

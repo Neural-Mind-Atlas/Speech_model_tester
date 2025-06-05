@@ -1,6 +1,6 @@
 """
 Base Configuration for TTS/STT Testing Framework
-===============================================
+====
 
 This module provides the base configuration class for the framework.
 """
@@ -87,3 +87,38 @@ class BaseConfig:
             'enabled_providers': self.enabled_providers,
             'enabled_models': self.enabled_models
         }
+    
+    def dict(self) -> Dict[str, Any]:
+        """Alias for to_dict() method for compatibility."""
+        return self.to_dict()
+    
+    def update(self, **kwargs) -> None:
+        """Update configuration with new values."""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise ValueError(f"Unknown configuration parameter: {key}")
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value with optional default."""
+        return getattr(self, key, default)
+    
+    def validate(self) -> bool:
+        """Validate configuration parameters."""
+        try:
+            # Validate numeric parameters
+            if self.max_workers <= 0:
+                raise ValueError("max_workers must be positive")
+            if self.timeout_seconds <= 0:
+                raise ValueError("timeout_seconds must be positive")
+            
+            # Validate log level
+            valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+            if self.log_level.upper() not in valid_log_levels:
+                raise ValueError(f"Invalid log_level: {self.log_level}")
+            
+            return True
+        except Exception as e:
+            print(f"Configuration validation failed: {e}")
+            return False

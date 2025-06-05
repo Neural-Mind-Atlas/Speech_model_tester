@@ -561,11 +561,15 @@ Author: TTS/STT Testing Framework Team
 Version: 1.0.0
 """
 
+import logging
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
 
 from .tts_evaluator import TTSEvaluator
 from .stt_evaluator import STTEvaluator
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class EvaluatorFactory:
@@ -581,13 +585,16 @@ class EvaluatorFactory:
         Initialize the evaluator factory.
         
         Args:
-            config: Base configuration object
+            config: Base configuration object (BaseConfig instance)
         """
         self.config = config
         self._evaluators = {}
         
         # Register available evaluators
         self._register_evaluators()
+        
+        logger.info("EvaluatorFactory initialized successfully")
+        logger.debug(f"Available evaluator types: {list(self._evaluators.keys())}")
     
     def _register_evaluators(self) -> None:
         """Register available evaluator types."""
@@ -595,6 +602,7 @@ class EvaluatorFactory:
             'tts': TTSEvaluator,
             'stt': STTEvaluator
         }
+        logger.debug("Evaluator types registered")
     
     def create_evaluator(self, evaluator_type: str, **kwargs) -> Union[TTSEvaluator, STTEvaluator]:
         """
@@ -603,10 +611,10 @@ class EvaluatorFactory:
         Args:
             evaluator_type: Type of evaluator ('tts' or 'stt')
             **kwargs: Additional configuration parameters
-            
+        
         Returns:
             Union[TTSEvaluator, STTEvaluator]: Evaluator instance
-            
+        
         Raises:
             ValueError: If evaluator type is not supported
         """
@@ -617,9 +625,18 @@ class EvaluatorFactory:
         
         evaluator_class = self._evaluators[evaluator_type]
         
-        # Merge configuration with kwargs
-        evaluator_config = {**self.config.dict(), **kwargs}
+        # Get configuration as dict - handle both BaseConfig objects and dicts
+        if hasattr(self.config, 'to_dict'):
+            config_dict = self.config.to_dict()
+        elif hasattr(self.config, 'dict'):
+            config_dict = self.config.dict()
+        else:
+            config_dict = self.config if isinstance(self.config, dict) else {}
         
+        # Merge configuration with kwargs
+        evaluator_config = {**config_dict, **kwargs}
+        
+        logger.info(f"Creating {evaluator_type} evaluator")
         return evaluator_class(evaluator_config)
     
     def get_available_evaluators(self) -> List[str]:
@@ -637,8 +654,21 @@ class EvaluatorFactory:
         
         Args:
             evaluator_type: Type of evaluator to check
-            
+        
         Returns:
             bool: True if evaluator is available
         """
         return evaluator_type.lower() in self._evaluators
+    
+    def get_factory_info(self) -> Dict[str, Any]:
+        """
+        Get information about the factory and its capabilities.
+        
+        Returns:
+            Dict[str, Any]: Factory information
+        """
+        return {
+            "supported_evaluator_types": list(self._evaluators.keys()),
+            "factory_version": "1.0.0",
+            "config_type": type(self.config).__name__
+        }
