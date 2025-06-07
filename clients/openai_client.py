@@ -116,43 +116,36 @@ class OpenAIClient(BaseTTSSTTClient):
             audio_data = response.content
             
             # Save to temporary file
-            with tempfile.NamedTemporaryFile(suffix=f".{response_format}", delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=f".{response_format}",
+                                           delete=False) as temp_file:
                 temp_file.write(audio_data)
-                audio_url = temp_file.name
+                audio_file_path = temp_file.name
             
             # Estimate duration (rough calculation)
             word_count = len(text.split())
-            estimated_duration = word_count * 0.6 / speed  # Approximate
-            
-            # Update statistics
-            self._update_stats(success=True, latency=latency)
+            estimated_duration = word_count * 0.6  # ~0.6 seconds per word
             
             return TTSResponse(
                 success=True,
-                audio_url=audio_url,
-                audio_data=audio_data,
+                audio_url=audio_file_path,
+                latency=latency,
                 metadata={
-                    'voice': voice,
                     'model': model,
+                    'voice': voice,
                     'response_format': response_format,
                     'speed': speed,
-                    'latency': latency,
+                    'text_length': len(text),
                     'estimated_duration': estimated_duration,
-                    'audio_size': len(audio_data)
+                    'audio_size_bytes': len(audio_data)
                 }
             )
             
         except Exception as e:
-            error_msg = f"OpenAI TTS failed: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            
-            # Update statistics
-            self._update_stats(success=False, latency=time.time() - start_time)
-            
+            logger.error(f"OpenAI TTS failed: {str(e)}")
             return TTSResponse(
                 success=False,
-                error_message=error_msg,
-                metadata={'voice': voice, 'model': kwargs.get('model', self.tts_model)}
+                error_message=f"OpenAI TTS error: {str(e)}",
+                latency=time.time() - start_time if 'start_time' in locals() else 0
             )
     
     async def speech_to_text(self, 
@@ -164,7 +157,7 @@ class OpenAIClient(BaseTTSSTTClient):
         
         Args:
             audio_path: Path to audio file
-            language: Language code (optional, Whisper can auto-detect)
+            language: Language code (optional, Whisper auto-detects)
             **kwargs: Additional parameters
         
         Returns:
@@ -177,7 +170,7 @@ class OpenAIClient(BaseTTSSTTClient):
             )
         
         try:
-            # Validate audio file exists
+            # Validate audio file
             audio_file = Path(audio_path)
             if not audio_file.exists():
                 return STTResponse(
@@ -189,19 +182,18 @@ class OpenAIClient(BaseTTSSTTClient):
             
             # Prepare parameters
             model = kwargs.get('model', self.stt_model)
-            response_format = kwargs.get('response_format', 'json')
+            response_format = kwargs.get('response_format', 'text')
             temperature = kwargs.get('temperature', 0)
             
             logger.debug(f"OpenAI STT request: model={model}, language={language}, "
                         f"format={response_format}")
             
-            # Open and read audio file
+            # Open and transcribe audio file
             async with aiofiles.open(audio_path, 'rb') as audio_file:
-                # Make API call
                 response = await self.client.audio.transcriptions.create(
                     model=model,
                     file=audio_file,
-                    language=language if language != 'auto' else None,
+                    language=language if language != "auto" else None,
                     response_format=response_format,
                     temperature=temperature
                 )
@@ -209,89 +201,71 @@ class OpenAIClient(BaseTTSSTTClient):
             latency = time.time() - start_time
             
             # Extract text from response
-            if response_format == 'json':
-                transcript = response.text
-                # Additional metadata might be available in JSON format
-                metadata = {
-                    'model': model,
-                    'language': language,
-                    'latency': latency,
-                    'audio_path': str(audio_path)
-                }
+            if hasattr(response, 'text'):
+                transcribed_text = response.text
             else:
-                transcript = str(response)
-                metadata = {
-                    'model': model,
-                    'language': language,
-                    'latency': latency,
-                    'audio_path': str(audio_path)
-                }
-            
-            # Update statistics
-            self._update_stats(success=True, latency=latency)
+                transcribed_text = str(response)
             
             return STTResponse(
                 success=True,
-                text=transcript,
-                metadata=metadata
+                text=transcribed_text,
+                latency=latency,
+                metadata={
+                    'model': model,
+                    'language': language,
+                    'response_format': response_format,
+                    'temperature': temperature,
+                    'audio_file': audio_path,
+                    'text_length': len(transcribed_text)
+                }
             )
             
         except Exception as e:
-            error_msg = f"OpenAI STT failed: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            
-            # Update statistics
-            self._update_stats(success=False, latency=time.time() - start_time)
-            
+            logger.error(f"OpenAI STT failed: {str(e)}")
             return STTResponse(
                 success=False,
-                error_message=error_msg,
-                metadata={'language': language, 'audio_path': audio_path}
+                error_message=f"OpenAI STT error: {str(e)}",
+                latency=time.time() - start_time if 'start_time' in locals() else 0
             )
     
-    def get_available_voices(self) -> List[Dict[str, Any]]:
+    def get_supported_voices(self) -> List[str]:
         """
-        Get list of available voices for TTS
+        Get list of supported voices for TTS
         
         Returns:
-            List of voice dictionaries
+            List of voice names
         """
-        return [
-            {'name': 'alloy', 'description': 'Neutral voice'},
-            {'name': 'echo', 'description': 'Male voice'},
-            {'name': 'fable', 'description': 'British male voice'},
-            {'name': 'onyx', 'description': 'Deep male voice'},
-            {'name': 'nova', 'description': 'Female voice'},
-            {'name': 'shimmer', 'description': 'Soft female voice'}
-        ]
-    
-    def get_supported_voices(self) -> List[str]:
-        """Get list of supported voice names"""
         return ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
     
     def get_supported_languages(self) -> List[str]:
-        """Get OpenAI supported languages (Whisper supports 100+ languages)"""
+        """
+        Get list of supported languages
+        
+        Returns:
+            List of language codes
+        """
+        # OpenAI supports many languages, here are the most common ones
         return [
-            'en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ru',
-            'ja', 'ko', 'zh', 'ar', 'hi', 'th', 'vi', 'id', 'ms', 'he',
-            'uk', 'bg', 'hr', 'cs', 'da', 'et', 'fi', 'el', 'hu', 'is',
-            'lv', 'lt', 'mt', 'no', 'ro', 'sk', 'sl', 'sv', 'ca', 'eu',
-            'gl', 'cy', 'ga', 'mk', 'sq', 'az', 'be', 'bn', 'bs', 'ka',
-            'kk', 'ky', 'lv', 'lb', 'ml', 'mr', 'ne', 'pa', 'fa', 'ta',
-            'te', 'tl', 'ur', 'uz', 'auto'  # auto-detect
+            'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh',
+            'ar', 'hi', 'tr', 'pl', 'nl', 'sv', 'da', 'no', 'fi'
         ]
     
     async def health_check(self) -> bool:
-        """Check OpenAI service health"""
+        """
+        Perform health check for OpenAI services
+        
+        Returns:
+            True if service is healthy, False otherwise
+        """
         try:
-            # Simple test with minimal TTS request
-            if self.supports_tts:
-                test_response = await self.text_to_speech("test", voice="alloy")
-                return test_response.success
-            elif self.supports_stt:
-                # For STT, just verify we have valid credentials
-                return bool(self.api_key)
-            return True
+            # Test TTS with a simple request
+            test_response = await self.text_to_speech(
+                text="Health check test",
+                voice=self.default_voice
+            )
+            
+            return test_response.success
+            
         except Exception as e:
             logger.error(f"OpenAI health check failed: {str(e)}")
             return False

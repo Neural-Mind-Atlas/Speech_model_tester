@@ -40,7 +40,7 @@ class ClientFactory:
     
     def _initialize_client_registry(self):
         """Initialize the client registry with available clients."""
-        # Try to import each client with graceful error handling
+        # Static mapping to fix provider.title() issue
         client_imports = [
             ('sarvam', '.sarvam_client', 'SarvamClient'),
             ('chatterbox', '.chatterbox_client', 'ChatterboxClient'),
@@ -70,10 +70,10 @@ class ClientFactory:
             provider: Provider name (e.g., 'openai', 'azure', 'google')
             model_name: Optional model name override
             **kwargs: Additional configuration parameters
-            
+        
         Returns:
             BaseTTSSTTClient: Configured client instance
-            
+        
         Raises:
             ValueError: If provider is not supported
             Exception: If client creation fails
@@ -91,7 +91,7 @@ class ClientFactory:
                 self.logger.debug(f"Returning cached client for {provider}")
                 return self._client_cache[cache_key]
             
-            # Get client class
+            # Get client class from registry (no more provider.title() issues!)
             client_class = self.client_registry[provider]
             
             # Get provider configuration
@@ -99,7 +99,7 @@ class ClientFactory:
             
             # Override with kwargs (but filter out factory-specific params)
             filtered_kwargs = {k: v for k, v in kwargs.items() 
-                             if k not in ['timeout', 'max_retries', 'enable_logging']}
+                              if k not in ['timeout', 'max_retries', 'enable_logging']}
             if filtered_kwargs:
                 provider_config.update(filtered_kwargs)
             
@@ -114,6 +114,9 @@ class ClientFactory:
                 client = client_class(model, provider_config)
             elif provider == 'openai':
                 # OpenAI client expects (config) - model_name is in config
+                client = client_class(provider_config)
+            elif provider == 'google':
+                # Google client expects (config) - fixed constructor
                 client = client_class(provider_config)
             else:
                 # Other clients typically expect (config) or (**config)
@@ -149,7 +152,7 @@ class ClientFactory:
         
         Args:
             provider: Provider name to check
-            
+        
         Returns:
             bool: True if provider is available
         """
@@ -161,7 +164,7 @@ class ClientFactory:
         
         Args:
             provider: Provider name
-            
+        
         Returns:
             Dict[str, Any]: Provider information
         """
@@ -183,7 +186,7 @@ class ClientFactory:
         
         Args:
             provider: Provider name
-            
+        
         Returns:
             Dict[str, Any]: Provider configuration
         """
