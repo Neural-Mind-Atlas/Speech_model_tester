@@ -10,6 +10,8 @@ from typing import Dict, Any, List, Optional
 import logging
 import io
 import os
+import tempfile
+import pathlib
 
 from .base_client import BaseTTSSTTClient, TTSResponse, STTResponse
 
@@ -18,13 +20,29 @@ logger = logging.getLogger(__name__)
 class GoogleClient(BaseTTSSTTClient):
     """Client for Google Cloud Speech services"""
     
-    def __init__(self, model_name: str, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize Google Cloud Speech client
+        
+        Args:
+            config: Configuration dictionary containing:
+                - credentials_path: Path to service account JSON file
+                - project_id: Google Cloud project ID
+                - default_voice_name: Default voice for TTS
+                - default_language_code: Default language code
+        """
+        # Extract model name from config or use default
+        model_name = config.get('model_name', 'google-cloud-speech')
+        
         super().__init__(model_name, config)
         
         # Set up Google Cloud credentials
         credentials_path = config.get('credentials_path')
         if credentials_path:
             os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
+        
+        # Project ID for Google Cloud
+        self.project_id = config.get('project_id')
         
         # Initialize clients
         try:
@@ -42,11 +60,11 @@ class GoogleClient(BaseTTSSTTClient):
         
         logger.info(f"Google Cloud Speech client initialized - Model: {model_name}")
     
-    def text_to_speech(self, 
-                      text: str, 
-                      voice: str = "en-US-Wavenet-D",
-                      language: str = "en-US",
-                      **kwargs) -> TTSResponse:
+    async def text_to_speech(self, 
+                           text: str, 
+                           voice: str = "en-US-Wavenet-D",
+                           language: str = "en-US",
+                           **kwargs) -> TTSResponse:
         """
         Convert text to speech using Google Cloud TTS
         
@@ -55,7 +73,7 @@ class GoogleClient(BaseTTSSTTClient):
             voice: Google voice name (e.g., en-US-Wavenet-D)
             language: Language code (e.g., en-US)
             **kwargs: Additional parameters
-            
+        
         Returns:
             TTSResponse with audio data
         """
@@ -148,56 +166,59 @@ class GoogleClient(BaseTTSSTTClient):
             else:
                 # Estimate for compressed formats
                 word_count = len(text.split())
-                duration = word_count * 0.6  # ~0.6 seconds per word
+                duration = word_count * 0.6
             
-            # Format determination
-            audio_format = 'wav' if audio_encoding == 'LINEAR16' else audio_encoding.lower()
+            # Save audio to temporary file
+            file_extension = 'wav' if audio_encoding == 'LINEAR16' else 'mp3'
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as temp_file:
+                temp_file.write(audio_data)
+                audio_url = temp_file.name
             
-            metadata = {
-                'provider': 'google',
-                'model': self.model_name,
-                'voice': voice_name,
-                'language': voice_language,
-                'audio_encoding': audio_encoding,
-                'sample_rate': sample_rate,
-                'audio_size': len(audio_data),
-                'speaking_rate': audio_config.speaking_rate,
-                'pitch': audio_config.pitch
-            }
+            # Update statistics
+            self._update_stats(success=True, latency=latency)
             
             return TTSResponse(
                 success=True,
+                audio_url=audio_url,
                 audio_data=audio_data,
-                audio_format=audio_format,
-                sample_rate=sample_rate,
-                duration=duration,
-                latency=latency,
-                metadata=metadata
+                metadata={
+                    'voice': voice_name,
+                    'language': voice_language,
+                    'encoding': audio_encoding,
+                    'sample_rate': sample_rate,
+                    'duration': duration,
+                    'latency': latency,
+                    'audio_size': len(audio_data)
+                }
             )
             
         except Exception as e:
-            logger.error(f"Google TTS error: {str(e)}")
+            error_msg = f"Google TTS failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            
+            # Update statistics
+            self._update_stats(success=False, latency=time.time() - start_time)
+            
             return TTSResponse(
                 success=False,
-                error_message=str(e)
+                error_message=error_msg,
+                metadata={'voice': voice, 'language': language}
             )
     
-    def speech_to_text(self, 
-                      audio_data: bytes,
-                      audio_format: str = "wav",
-                      language: str = "en-US",
-                      **kwargs) -> STTResponse:
+    async def speech_to_text(self, 
+                           audio_path: str, 
+                           language: str = "en-US",
+                           **kwargs) -> STTResponse:
         """
         Convert speech to text using Google Cloud STT
         
         Args:
-            audio_data: Audio data in bytes
-            audio_format: Audio format
-            language: Language code
+            audio_path: Path to audio file
+            language: Language code (e.g., en-US)
             **kwargs: Additional parameters
-            
+        
         Returns:
-            STTResponse with transcript
+            STTResponse with transcribed text
         """
         if not self.supports_stt:
             return STTResponse(
@@ -206,177 +227,176 @@ class GoogleClient(BaseTTSSTTClient):
             )
         
         try:
-            # Validate input
-            self._validate_audio_input(audio_data)
+            # Validate audio file exists
+            audio_file = pathlib.Path(audio_path)
+            if not audio_file.exists():
+                return STTResponse(
+                    success=False,
+                    error_message=f"Audio file not found: {audio_path}"
+                )
             
             start_time = time.time()
             
-            # Configure audio
-            encoding_map = {
-                'wav': speech.RecognitionConfig.AudioEncoding.LINEAR16,
-                'flac': speech.RecognitionConfig.AudioEncoding.FLAC,
-                'mulaw': speech.RecognitionConfig.AudioEncoding.MULAW,
-                'amr': speech.RecognitionConfig.AudioEncoding.AMR,
-                'amr_wb': speech.RecognitionConfig.AudioEncoding.AMR_WB,
-                'ogg_opus': speech.RecognitionConfig.AudioEncoding.OGG_OPUS,
-                'speex': speech.RecognitionConfig.AudioEncoding.SPEEX_WITH_HEADER_BYTE,
-                'mp3': speech.RecognitionConfig.AudioEncoding.MP3
-            }
+            # Read audio file
+            with open(audio_path, 'rb') as audio_file:
+                audio_content = audio_file.read()
             
-            audio_encoding = encoding_map.get(audio_format.lower(), speech.RecognitionConfig.AudioEncoding.LINEAR16)
-            sample_rate = kwargs.get('sample_rate', 22050)
+            # Configure audio
+            audio = speech.RecognitionAudio(content=audio_content)
             
             # Configure recognition
+            language_code = language or self.default_language_code
+            model = kwargs.get('model', 'latest_short')
+            enable_automatic_punctuation = kwargs.get('enable_automatic_punctuation', True)
+            
             config = speech.RecognitionConfig(
-                encoding=audio_encoding,
-                sample_rate_hertz=sample_rate,
-                language_code=language,
-                model=kwargs.get('model', 'latest_long'),
-                use_enhanced=kwargs.get('use_enhanced', True),
-                enable_word_time_offsets=kwargs.get('enable_word_timestamps', True),
-                enable_word_confidence=kwargs.get('enable_word_confidence', True),
-                enable_automatic_punctuation=kwargs.get('enable_punctuation', True),
-                enable_speaker_diarization=kwargs.get('enable_speaker_diarization', False),
-                max_alternatives=kwargs.get('max_alternatives', 1)
+                encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+                sample_rate_hertz=kwargs.get('sample_rate', 16000),
+                language_code=language_code,
+                model=model,
+                enable_automatic_punctuation=enable_automatic_punctuation,
+                enable_word_time_offsets=kwargs.get('enable_word_time_offsets', False),
+                enable_word_confidence=kwargs.get('enable_word_confidence', True)
             )
             
-            # Add speaker diarization config if enabled
-            if kwargs.get('enable_speaker_diarization', False):
-                config.diarization_config = speech.SpeakerDiarizationConfig(
-                    enable_speaker_diarization=True,
-                    min_speaker_count=kwargs.get('min_speakers', 1),
-                    max_speaker_count=kwargs.get('max_speakers', 6)
-                )
+            logger.debug(f"Google STT request: language={language_code}, model={model}")
             
-            # Create audio object
-            audio = speech.RecognitionAudio(content=audio_data)
+            # Perform the speech-to-text request
+            response = self.stt_client.recognize(config=config, audio=audio)
             
-            logger.debug(f"Google STT request: language={language}, model={config.model}, "
-                        f"audio_size={len(audio_data)} bytes")
+            latency = time.time() - start_time
             
-            # Perform recognition
-            if len(audio_data) > 10 * 1024 * 1024:  # > 10MB, use long running operation
-                operation = self.stt_client.long_running_recognize(config=config, audio=audio)
-                logger.info("Google STT: Using long running operation for large audio file")
-                response = operation.result(timeout=300)  # 5 minute timeout
-            else:
-                response = self.stt_client.recognize(config=config, audio=audio)
-            
-            processing_time = time.time() - start_time
-            
-            if response.results:
-                # Get the best alternative
-                result = response.results[0]
-                alternative = result.alternatives[0]
-                
-                transcript = alternative.transcript
-                confidence = alternative.confidence
-                
-                # Extract word-level information
-                word_timestamps = []
-                if hasattr(alternative, 'words'):
-                    for word_info in alternative.words:
-                        word_timestamps.append({
-                            'word': word_info.word,
-                            'start': word_info.start_time.total_seconds(),
-                            'end': word_info.end_time.total_seconds(),
-                            'confidence': getattr(word_info, 'confidence', confidence),
-                            'speaker_tag': getattr(word_info, 'speaker_tag', 0)
-                        })
-                
-                # Calculate audio duration
-                if word_timestamps:
-                    audio_duration = max(w['end'] for w in word_timestamps)
-                else:
-                    # Estimate duration
-                    audio_duration = processing_time
-                
-                # Calculate RTF
-                rtf = processing_time / audio_duration if audio_duration > 0 else 0
-                
-                metadata = {
-                    'provider': 'google',
-                    'model': self.model_name,
-                    'language': language,
-                    'audio_duration': audio_duration,
-                    'recognition_model': config.model,
-                    'num_alternatives': len(result.alternatives),
-                    'total_billed_time': getattr(response, 'total_billed_time', None)
-                }
-                
-                # Add speaker diarization info if available
-                if config.diarization_config and config.diarization_config.enable_speaker_diarization:
-                    speakers = set(w.get('speaker_tag', 0) for w in word_timestamps)
-                    metadata['num_speakers'] = len(speakers)
-                
-                return STTResponse(
-                    success=True,
-                    transcript=transcript,
-                    confidence=confidence,
-                    processing_time=processing_time,
-                    rtf=rtf,
-                    word_timestamps=word_timestamps,
-                    metadata=metadata
-                )
-            else:
-                error_msg = "Google STT: No transcription results"
-                logger.warning(error_msg)
+            # Process results
+            if not response.results:
                 return STTResponse(
                     success=False,
-                    error_message=error_msg,
-                    processing_time=processing_time
+                    error_message="No speech detected in audio",
+                    metadata={'language': language_code, 'latency': latency}
                 )
-                
+            
+            # Get the best alternative
+            result = response.results[0]
+            alternative = result.alternatives[0]
+            
+            transcript = alternative.transcript
+            confidence = alternative.confidence if hasattr(alternative, 'confidence') else 0.0
+            
+            # Extract word-level information if available
+            words = []
+            if hasattr(alternative, 'words'):
+                for word_info in alternative.words:
+                    words.append({
+                        'word': word_info.word,
+                        'start_time': word_info.start_time.total_seconds() if hasattr(word_info, 'start_time') else 0,
+                        'end_time': word_info.end_time.total_seconds() if hasattr(word_info, 'end_time') else 0,
+                        'confidence': word_info.confidence if hasattr(word_info, 'confidence') else 0.0
+                    })
+            
+            # Update statistics
+            self._update_stats(success=True, latency=latency)
+            
+            return STTResponse(
+                success=True,
+                text=transcript,
+                metadata={
+                    'language': language_code,
+                    'confidence': confidence,
+                    'model': model,
+                    'latency': latency,
+                    'words': words,
+                    'audio_duration': len(audio_content) / (16000 * 2)  # Estimate duration
+                }
+            )
+            
         except Exception as e:
-            logger.error(f"Google STT error: {str(e)}")
+            error_msg = f"Google STT failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            
+            # Update statistics
+            self._update_stats(success=False, latency=time.time() - start_time)
+            
             return STTResponse(
                 success=False,
-                error_message=str(e)
+                error_message=error_msg,
+                metadata={'language': language, 'audio_path': audio_path}
             )
     
-    def get_supported_voices(self) -> List[str]:
-        """Get Google TTS supported voices (subset)"""
-        return self.config.get('supported_voices', [
-            # English voices
-            'en-US-Wavenet-A', 'en-US-Wavenet-B', 'en-US-Wavenet-C', 'en-US-Wavenet-D',
-            'en-US-Wavenet-E', 'en-US-Wavenet-F', 'en-US-Wavenet-G', 'en-US-Wavenet-H',
-            'en-US-Wavenet-I', 'en-US-Wavenet-J',
-            'en-GB-Wavenet-A', 'en-GB-Wavenet-B', 'en-GB-Wavenet-C', 'en-GB-Wavenet-D',
+    def get_available_voices(self) -> List[Dict[str, Any]]:
+        """
+        Get list of available voices for TTS
+        
+        Returns:
+            List of voice dictionaries with name, language, and gender
+        """
+        try:
+            if not self.supports_tts:
+                return []
             
-            # Other languages (examples)
-            'es-ES-Wavenet-A', 'fr-FR-Wavenet-A', 'de-DE-Wavenet-A',
-            'ja-JP-Wavenet-A', 'ko-KR-Wavenet-A', 'zh-CN-Wavenet-A',
-            'hi-IN-Wavenet-A', 'hi-IN-Wavenet-B', 'hi-IN-Wavenet-C'
-        ])
+            # Get available voices from Google Cloud
+            voices_response = self.tts_client.list_voices()
+            
+            voices = []
+            for voice in voices_response.voices:
+                for language_code in voice.language_codes:
+                    voices.append({
+                        'name': voice.name,
+                        'language': language_code,
+                        'gender': voice.ssml_gender.name.lower(),
+                        'natural_sample_rate': voice.natural_sample_rate_hertz
+                    })
+            
+            return voices
+            
+        except Exception as e:
+            logger.error(f"Failed to get available voices: {str(e)}")
+            # Return default voices if API call fails
+            return [
+                {'name': 'en-US-Wavenet-D', 'language': 'en-US', 'gender': 'male'},
+                {'name': 'en-US-Wavenet-C', 'language': 'en-US', 'gender': 'female'},
+                {'name': 'en-US-Wavenet-B', 'language': 'en-US', 'gender': 'male'},
+                {'name': 'en-US-Wavenet-A', 'language': 'en-US', 'gender': 'female'},
+                {'name': 'en-GB-Wavenet-A', 'language': 'en-GB', 'gender': 'female'},
+                {'name': 'en-GB-Wavenet-B', 'language': 'en-GB', 'gender': 'male'},
+            ]
     
     def get_supported_languages(self) -> List[str]:
-        """Get Google supported languages"""
-        return self.config.get('supported_languages', [
-            'en-US', 'en-GB', 'en-AU', 'en-CA', 'en-IN', 'en-IE', 'en-NZ', 'en-PH', 'en-SG', 'en-ZA',
-            'es-ES', 'es-MX', 'es-AR', 'es-CL', 'es-CO', 'es-PE', 'es-VE',
-            'fr-FR', 'fr-CA', 'de-DE', 'it-IT', 'pt-BR', 'pt-PT',
-            'ru-RU', 'ja-JP', 'ko-KR', 'zh-CN', 'zh-TW', 'zh-HK',
-            'hi-IN', 'ar-EG', 'tr-TR', 'nl-NL', 'sv-SE', 'da-DK',
-            'no-NO', 'fi-FI', 'pl-PL', 'cs-CZ', 'sk-SK', 'hu-HU'
-        ])
+        """
+        Get list of supported languages
+        
+        Returns:
+            List of language codes
+        """
+        return [
+            'en-US', 'en-GB', 'en-AU', 'en-CA', 'en-IN',
+            'es-ES', 'es-US', 'fr-FR', 'fr-CA', 'de-DE',
+            'it-IT', 'pt-BR', 'pt-PT', 'ru-RU', 'ja-JP',
+            'ko-KR', 'zh-CN', 'zh-TW', 'hi-IN', 'ar-XA'
+        ]
     
-    def health_check(self) -> bool:
-        """Check Google Cloud Speech service health"""
+    async def health_check(self) -> bool:
+        """
+        Perform health check for Google Cloud Speech services
+        
+        Returns:
+            True if service is healthy, False otherwise
+        """
         try:
+            # Test TTS if supported
             if self.supports_tts:
-                # Simple TTS test
-                test_response = self.text_to_speech("test", voice="en-US-Wavenet-D")
-                return test_response.success
-            elif self.supports_stt:
-                # For STT, try to list available models (this tests authentication)
-                try:
-                    # This is a simple way to test if credentials work
-                    self.stt_client.list_phrase_sets(parent=f"projects/{self.config.get('project_id', 'test')}/locations/global")
-                    return True
-                except:
-                    # If we can't list (maybe no project_id), assume healthy if we have a client
-                    return hasattr(self, 'stt_client')
+                test_response = await self.text_to_speech(
+                    text="Health check test",
+                    voice=self.default_voice_name
+                )
+                if not test_response.success:
+                    return False
+            
+            # Test STT if supported (would need a test audio file)
+            # For now, just check if clients are initialized
+            if self.supports_stt and not hasattr(self, 'stt_client'):
+                return False
+            
             return True
+            
         except Exception as e:
-            logger.error(f"Google health check failed: {str(e)}")
+            logger.error(f"Google Cloud health check failed: {str(e)}")
             return False
