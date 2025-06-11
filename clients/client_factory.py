@@ -46,7 +46,8 @@ class ClientFactory:
             ('chatterbox', '.chatterbox_client', 'ChatterboxClient'),
             ('openai', '.openai_client', 'OpenAIClient'),  # Fixed case sensitivity
             ('azure', '.azure_client', 'AzureClient'),
-            ('google', '.google_client', 'GoogleClient')
+            ('google', '.google_client', 'GoogleClient'),
+            ('elevenlabs', '.elevenlabs_client', 'ElevenLabsClient')
         ]
         
         for provider_name, module_path, class_name in client_imports:
@@ -67,7 +68,7 @@ class ClientFactory:
         Create a client instance for the specified provider.
         
         Args:
-            provider: Provider name (e.g., 'openai', 'azure', 'google')
+            provider: Provider name (e.g., 'openai', 'azure', 'google', 'elevenlabs')
             model_name: Optional model name override
             **kwargs: Additional configuration parameters
         
@@ -99,7 +100,7 @@ class ClientFactory:
             
             # Override with kwargs (but filter out factory-specific params)
             filtered_kwargs = {k: v for k, v in kwargs.items() 
-                              if k not in ['timeout', 'max_retries', 'enable_logging']}
+                             if k not in ['timeout', 'max_retries', 'enable_logging']}
             if filtered_kwargs:
                 provider_config.update(filtered_kwargs)
             
@@ -117,6 +118,9 @@ class ClientFactory:
                 client = client_class(provider_config)
             elif provider == 'google':
                 # Google client expects (config) - fixed constructor
+                client = client_class(provider_config)
+            elif provider == 'elevenlabs':
+                # ElevenLabs client expects (config)
                 client = client_class(provider_config)
             else:
                 # Other clients typically expect (config) or (**config)
@@ -208,7 +212,8 @@ class ClientFactory:
                     'azure': 'AZURE_SPEECH_KEY',
                     'google': 'GOOGLE_APPLICATION_CREDENTIALS',
                     'sarvam': 'SARVAM_API_KEY',
-                    'chatterbox': 'CHATTERBOX_API_KEY'
+                    'chatterbox': 'CHATTERBOX_API_KEY',
+                    'elevenlabs': 'ELEVENLABS_API_KEY'
                 }
                 
                 if provider in env_key_map:
@@ -230,7 +235,8 @@ class ClientFactory:
                     'azure': 'en-US-JennyNeural', 
                     'google': 'standard',
                     'sarvam': 'bulbul',
-                    'chatterbox': 'default'
+                    'chatterbox': 'default',
+                    'elevenlabs': 'eleven_multilingual_v2'
                 }
                 provider_config['model_name'] = default_models.get(provider, 'default')
             

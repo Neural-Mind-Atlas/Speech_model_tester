@@ -64,3 +64,6 @@ tqdm>=4.66.0
 google>=3.0.0
 
 aiofiles>=24.1.0
+
+
+elevenlabs>=0.2.26

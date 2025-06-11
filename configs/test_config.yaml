@@ -80,11 +80,17 @@ models:
       config_file: "configs/models/google.yaml"
       priority: 4
       
+    # ElevenLabs TTS Models
+    elevenlabs:
+      enabled: true
+      config_file: "configs/models/elevenlabs.yaml"
+      priority: 5
+      
     # Chatterbox TTS Models
     chatterbox:
       enabled: false  # Disabled by default
       config_file: "configs/models/chatterbox.yaml"
-      priority: 5
+      priority: 6
 
   # Speech-to-Text Models
   stt:
@@ -112,11 +118,17 @@ models:
       config_file: "configs/models/google.yaml"
       priority: 4
       
+    # ElevenLabs STT Models
+    elevenlabs:
+      enabled: true
+      config_file: "configs/models/elevenlabs.yaml"
+      priority: 5
+      
     # Chatterbox STT Models
     chatterbox:
       enabled: false  # Disabled by default
       config_file: "configs/models/chatterbox.yaml"
-      priority: 5
+      priority: 6
 
 # Testing Parameters
 testing:

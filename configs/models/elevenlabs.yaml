@@ -1,0 +1,187 @@
+    "provider_name": "ElevenLabs",
+    "api_base_url": "https://api.elevenlabs.io/v1",
+    "tts": {
+        "models": [
+            {
+                "name": "eleven_monolingual_v1",
+                "display_name": "Eleven Monolingual v1",
+                "description": "High-quality English-only model with natural speech",
+                "languages": ["en"],
+                "max_characters": 5000,
+                "supported_formats": ["mp3"],
+                "default_settings": {
+                    "voice_id": "pNInz6obpgDQGcFmaJgB",  # Adam
+                    "stability": 0.5,
+                    "similarity_boost": 0.5,
+                    "style": 0.0,
+                    "use_speaker_boost": True
+                }
+            },
+            {
+                "name": "eleven_multilingual_v1",
+                "display_name": "Eleven Multilingual v1",
+                "description": "Multilingual model supporting various languages",
+                "languages": ["en", "es", "fr", "de", "it", "pt", "pl", "hi"],
+                "max_characters": 5000,
+                "supported_formats": ["mp3"],
+                "default_settings": {
+                    "voice_id": "pNInz6obpgDQGcFmaJgB",
+                    "stability": 0.5,
+                    "similarity_boost": 0.5,
+                    "style": 0.0,
+                    "use_speaker_boost": True
+                }
+            },
+            {
+                "name": "eleven_multilingual_v2",
+                "display_name": "Eleven Multilingual v2",
+                "description": "Enhanced multilingual model with improved quality",
+                "languages": ["en", "es", "fr", "de", "it", "pt", "pl", "hi", "ja", "ko", "zh"],
+                "max_characters": 5000,
+                "supported_formats": ["mp3"],
+                "default_settings": {
+                    "voice_id": "pNInz6obpgDQGcFmaJgB",
+                    "stability": 0.5,
+                    "similarity_boost": 0.5,
+                    "style": 0.0,
+                    "use_speaker_boost": True
+                }
+            },
+            {
+                "name": "eleven_turbo_v2",
+                "display_name": "Eleven Turbo v2",
+                "description": "Fast, low-latency model optimized for speed",
+                "languages": ["en"],
+                "max_characters": 5000,
+                "supported_formats": ["mp3"],
+                "default_settings": {
+                    "voice_id": "pNInz6obpgDQGcFmaJgB",
+                    "stability": 0.5,
+                    "similarity_boost": 0.5,
+                    "style": 0.0,
+                    "use_speaker_boost": True
+                }
+            }
+        ],
+        "voices": [
+            {
+                "voice_id": "pNInz6obpgDQGcFmaJgB",
+                "name": "Adam",
+                "gender": "male",
+                "accent": "american",
+                "description": "Deep, authoritative voice"
+            },
+            {
+                "voice_id": "EXAVITQu4vr4xnSDxMaL",
+                "name": "Bella",
+                "gender": "female",
+                "accent": "american",
+                "description": "Soft, warm female voice"
+            },
+            {
+                "voice_id": "ErXwobaYiN019PkySvjV",
+                "name": "Antoni",
+                "gender": "male",
+                "accent": "american",
+                "description": "Well-rounded, versatile voice"
+            },
+            {
+                "voice_id": "VR6AewLTigWG4xSOukaG",
+                "name": "Arnold",
+                "gender": "male",
+                "accent": "american",
+                "description": "Crisp, clear narration voice"
+            },
+            {
+                "voice_id": "rrnqDWOzpnfpJXyiEeHA",
+                "name": "Domi",
+                "gender": "female",
+                "accent": "american",
+                "description": "Strong, confident female voice"
+            },
+            {
+                "voice_id": "AZnzlk1XvdvUeBnXmlld",
+                "name": "Elli",
+                "gender": "female",
+                "accent": "american",
+                "description": "Emotional, expressive voice"
+            },
+            {
+                "voice_id": "MF3mGyEYCl7XYWbV9V6O",
+                "name": "Elli",
+                "gender": "female",
+                "accent": "american",
+                "description": "Young, energetic voice"
+            },
+            {
+                "voice_id": "TxGEqnHWrfWFTfGW9XjX",
+                "name": "Josh",
+                "gender": "male",
+                "accent": "american",
+                "description": "Deep, calm voice"
+            },
+            {
+                "voice_id": "CYw3kZ02Hs0563khs1Fj",
+                "name": "Rachel",
+                "gender": "female",
+                "accent": "american",
+                "description": "Calm, pleasant voice"
+            },
+            {
+                "voice_id": "29vD33N1CtxCmqQRPOHJ",
+                "name": "Drew",
+                "gender": "male",
+                "accent": "american",
+                "description": "Well-balanced, natural voice"
+            }
+        ]
+    },
+    "stt": {
+        "models": [],
+        "note": "ElevenLabs does not provide Speech-to-Text services"
+    },
+    "rate_limits": {
+        "requests_per_minute": 120,
+        "characters_per_month": 10000,  # Free tier limit
+        "concurrent_requests": 2
+    },
+    "pricing": {
+        "free_tier": {
+            "characters_per_month": 10000,
+            "voice_cloning": False,
+            "commercial_license": False
+        },
+        "starter": {
+            "characters_per_month": 30000,
+            "price_per_month": 5,
+            "voice_cloning": True,
+            "commercial_license": True
+        },
+        "creator": {
+            "characters_per_month": 100000,
+            "price_per_month": 22,
+            "voice_cloning": True,
+            "commercial_license": True
+        },
+        "pro": {
+            "characters_per_month": 500000,
+            "price_per_month": 99,
+            "voice_cloning": True,
+            "commercial_license": True
+        }
+    },
+    "features": {
+        "voice_cloning": True,
+        "voice_design": True,
+        "speech_synthesis": True,
+        "voice_library": True,
+        "api_access": True,
+        "commercial_license": True,
+        "priority_support": True
+    },
+    "audio_settings": {
+        "default_format": "mp3",
+        "sample_rate": 22050,
+        "bit_depth": 16,
+        "channels": 1
+    }

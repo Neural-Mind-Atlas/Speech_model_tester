@@ -153,6 +153,7 @@ class FrameworkIntegrationTester:
                 'OPENAI_API_KEY': 'test_openai_key',
                 'AZURE_SPEECH_KEY': 'test_azure_key',
                 'AZURE_SPEECH_REGION': 'test_region',
+                'ELEVENLABS_API_KEY': 'test_elevenlabs_key',
                 'GOOGLE_APPLICATION_CREDENTIALS': f"{self.temp_dir}/mock_google_creds.json"
             })
             
@@ -161,7 +162,7 @@ class FrameworkIntegrationTester:
                 "type": "service_account",
                 "project_id": "test-project",
                 "private_key_id": "test-key-id",
-                "private_key": "-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n",
+                "private_key": "----BEGIN PRIVATE KEY----\nMOCK_KEY\n----END PRIVATE KEY----\n",
                 "client_email": "test@test-project.iam.gserviceaccount.com",
                 "client_id": "123456789",
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -219,7 +220,7 @@ class FrameworkIntegrationTester:
             for i, text_file in enumerate(text_files):
                 text_path = Path(self.test_config['test_data_dir']) / text_file
                 text_path.write_text(sample_texts[i])
-            
+                
         except Exception as e:
             self.add_result(
                 "Sample Test Files",
@@ -305,7 +306,8 @@ class FrameworkIntegrationTester:
             ("numpy", "Numerical computing"),
             ("requests", "HTTP requests"),
             ("jinja2", "Template engine"),
-            ("asyncio", "Async programming")
+            ("asyncio", "Async programming"),
+            ("elevenlabs", "ElevenLabs SDK")
         ]
         
         for module_name, description in required_imports:
@@ -383,7 +385,29 @@ class FrameworkIntegrationTester:
                     "Failed to load TTS/STT configurations",
                     str(e)
                 )
-        
+            
+            # Test ElevenLabs model configuration
+            try:
+                elevenlabs_config_path = Path("configs/models/elevenlabs.yaml")
+                if elevenlabs_config_path.exists():
+                    self.add_result(
+                        "ElevenLabs Config File",
+                        True,
+                        "ElevenLabs configuration file exists"
+                    )
+                else:
+                    self.add_result(
+                        "ElevenLabs Config File",
+                        False,
+                        "ElevenLabs configuration file missing"
+                    )
+            except Exception as e:
+                self.add_result(
+                    "ElevenLabs Config File",
+                    False,
+                    f"ElevenLabs config check failed: {str(e)}"
+                )
+                
         except Exception as e:
             self.add_result(
                 "Configuration System",
@@ -424,7 +448,7 @@ class FrameworkIntegrationTester:
                 )
             
             # Test client creation - try to create real clients
-            test_providers = ['openai', 'azure', 'google']
+            test_providers = ['openai', 'azure', 'google', 'elevenlabs']
             
             for provider in test_providers:
                 try:
@@ -441,7 +465,23 @@ class FrameworkIntegrationTester:
                         f"Failed to create {provider} client",
                         str(e)
                     )
-        
+            
+            # Test ElevenLabs client specifically
+            try:
+                from clients.elevenlabs_client import ElevenLabsClient
+                self.add_result(
+                    "ElevenLabs Client Import",
+                    True,
+                    "ElevenLabs client imported successfully"
+                )
+            except ImportError as e:
+                self.add_result(
+                    "ElevenLabs Client Import",
+                    False,
+                    "Failed to import ElevenLabs client",
+                    str(e)
+                )
+                
         except Exception as e:
             self.add_result(
                 "Client Factory",
@@ -499,7 +539,7 @@ class FrameworkIntegrationTester:
                     False,
                     "No evaluators available"
                 )
-        
+                
         except Exception as e:
             self.add_result(
                 "Evaluator Factory",
@@ -591,7 +631,7 @@ class FrameworkIntegrationTester:
                             False,
                             f"Report generator failed: {str(e)}"
                         )
-            
+                        
             except ImportError as e:
                 self.add_result(
                     f"Utility: {module_name}",
@@ -632,6 +672,14 @@ class FrameworkIntegrationTester:
                     test_data={"text": "test"}
                 )
                 
+                # Add ElevenLabs mock test
+                suite.add_test(
+                    provider="elevenlabs",
+                    model_type="tts",
+                    model_name="eleven_multilingual_v2",
+                    test_data={"text": "ElevenLabs test"}
+                )
+                
                 executor.add_test_suite(suite)
                 
                 self.add_result(
@@ -670,7 +718,7 @@ class FrameworkIntegrationTester:
                     False,
                     f"Execution configuration failed: {str(e)}"
                 )
-        
+                
         except Exception as e:
             self.add_result(
                 "Test Executor",
@@ -692,15 +740,15 @@ class FrameworkIntegrationTester:
             # Fix: Only pass config, not results_dir as separate parameter
             generator = ReportGenerator(config)
             
-            # Create mock results data
+            # Create mock results data including ElevenLabs
             mock_results = {
                 'metadata': {
                     'timestamp': '2024-01-15T10:30:00Z',
                     'framework_version': '1.0.0',
-                    'total_tests': 5,
-                    'successful_tests': 4,
+                    'total_tests': 6,
+                    'successful_tests': 5,
                     'failed_tests': 1,
-                    'success_rate': 0.8
+                    'success_rate': 0.83
                 },
                 'detailed_results': [
                     {
@@ -709,6 +757,13 @@ class FrameworkIntegrationTester:
                         'model_type': 'tts',
                         'success': True,
                         'metrics': {'quality': 0.85}
+                    },
+                    {
+                        'test_id': 'test_2',
+                        'provider': 'elevenlabs',
+                        'model_type': 'tts',
+                        'success': True,
+                        'metrics': {'quality': 0.92}
                     }
                 ]
             }
@@ -718,33 +773,33 @@ class FrameworkIntegrationTester:
                 mock_json.return_value = f"{self.test_config['results_dir']}/test_report.json"
                 json_report = await generator.generate_json_report(mock_results)
                 
-            self.add_result(
-                "JSON Report Generation",
-                True,
-                "JSON report generation tested successfully"
-            )
+                self.add_result(
+                    "JSON Report Generation",
+                    True,
+                    "JSON report generation tested successfully"
+                )
             
             # Test YAML report generation (mock)
             with patch.object(generator, 'generate_yaml_report') as mock_yaml:
                 mock_yaml.return_value = f"{self.test_config['results_dir']}/test_report.yaml"
                 yaml_report = await generator.generate_yaml_report(mock_results)
                 
-            self.add_result(
-                "YAML Report Generation", 
-                True,
-                "YAML report generation tested successfully"
-            )
+                self.add_result(
+                    "YAML Report Generation", 
+                    True,
+                    "YAML report generation tested successfully"
+                )
             
             # Test HTML report generation (mock)
             with patch.object(generator, 'generate_html_report') as mock_html:
                 mock_html.return_value = f"{self.test_config['results_dir']}/test_report.html"
                 html_report = await generator.generate_html_report(mock_results)
                 
-            self.add_result(
-                "HTML Report Generation",
-                True,
-                "HTML report generation tested successfully"
-            )
+                self.add_result(
+                    "HTML Report Generation",
+                    True,
+                    "HTML report generation tested successfully"
+                )
             
             # Overall report generation test
             self.add_result(
@@ -854,6 +909,21 @@ class FrameworkIntegrationTester:
                 test_data={"audio_path": "/tmp/mock_audio.wav"}
             )
             
+            # Add ElevenLabs integration test
+            suite.add_test(
+                provider="elevenlabs",
+                model_type="tts",
+                model_name="eleven_multilingual_v2",
+                test_data={"text": "ElevenLabs integration test"}
+            )
+            
+            suite.add_test(
+                provider="elevenlabs",
+                model_type="stt",
+                model_name="eleven_multilingual_v2",
+                test_data={"audio_path": "/tmp/elevenlabs_audio.wav"}
+            )
+            
             executor.add_test_suite(suite)
             
             self.add_result(
@@ -875,7 +945,7 @@ class FrameworkIntegrationTester:
                 True,
                 "Execution summary generated"
             )
-        
+            
         except Exception as e:
             self.add_result(
                 "Integration Flow",
