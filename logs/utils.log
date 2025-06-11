@@ -266,3 +266,30 @@
 2025-06-08 01:43:29 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/MetaUpSpace/NMA/tts
 2025-06-08 01:43:29 - utils.file_utils - INFO - _log:199 - Performance: ensure_directory - 0.000s - SUCCESS
 2025-06-08 01:43:29 - utils.audio_utils - INFO - _log:201 - AudioProcessor initialized with temp directory: /tmp
+2025-06-12 02:51:07 - utils - INFO - _log:201 - Utils module initialized successfully - Version 1.0.0
+2025-06-12 02:51:07 - utils - INFO - _log:201 - Utils module loaded with 14 available utilities
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:199 - Performance: ensure_directory - 0.000s - SUCCESS
+2025-06-12 02:51:07 - utils.audio_utils - INFO - _log:201 - AudioProcessor initialized with temp directory: /tmp
+2025-06-12 02:51:07 - utils.metrics_utils - INFO - _log:201 - MetricsCalculator initialized - Case sensitive: False
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:199 - Performance: ensure_directory - 0.000s - SUCCESS
+2025-06-12 02:51:07 - utils.audio_utils - INFO - _log:201 - AudioProcessor initialized with temp directory: /tmp
+2025-06-12 02:51:07 - utils.metrics_utils - INFO - _log:201 - MetricsCalculator initialized - Case sensitive: False
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 02:51:07 - utils.metrics_utils - INFO - _log:201 - MetricsCalculator initialized - Case sensitive: False
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:199 - Performance: ensure_directory - 0.000s - SUCCESS
+2025-06-12 02:51:07 - utils.audio_utils - INFO - _log:201 - AudioProcessor initialized with temp directory: /tmp
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: /tmp/tts_stt_test_9dycca1x/results
+2025-06-12 02:51:07 - utils.metrics_utils - INFO - _log:201 - MetricsCalculator initialized - Case sensitive: False
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:201 - FileManager initialized with base directory: /home/priyanshum/Desktop/Office/NMA/tts
+2025-06-12 02:51:07 - utils.file_utils - INFO - _log:199 - Performance: ensure_directory - 0.000s - SUCCESS
+2025-06-12 02:51:07 - utils.audio_utils - INFO - _log:201 - AudioProcessor initialized with temp directory: /tmp

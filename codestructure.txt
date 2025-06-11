@@ -1,4 +1,5 @@
 .
+├── 1.txt
 ├── clients
 │   ├── azure_client.py
 │   ├── base_client.py
@@ -7,32 +8,64 @@
 │   ├── google_client.py
 │   ├── __init__.py
 │   ├── openai_client.py
+│   ├── __pycache__
+│   │   ├── azure_client.cpython-311.pyc
+│   │   ├── base_client.cpython-311.pyc
+│   │   ├── chatterbox_client.cpython-311.pyc
+│   │   ├── client_factory.cpython-311.pyc
+│   │   ├── google_client.cpython-311.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── openai_client.cpython-311.pyc
+│   │   └── sarvam_client.cpython-311.pyc
 │   └── sarvam_client.py
 ├── codestructure.txt
 ├── configs
+│   ├── base_config.py
+│   ├── __init__.py
 │   ├── models
 │   │   ├── azure.yaml
 │   │   ├── chatterbox.yaml
 │   │   ├── google.yaml
 │   │   ├── openai.yaml
 │   │   └── sarvam.yaml
-│   └── test_config.yaml
+│   ├── __pycache__
+│   │   ├── base_config.cpython-311.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── stt_config.cpython-311.pyc
+│   │   └── tts_config.cpython-311.pyc
+│   ├── stt_config.py
+│   ├── test_config.yaml
+│   └── tts_config.py
 ├── core
 │   ├── evaluator_factory.py
 │   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── evaluator_factory.cpython-311.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── stt_evaluator.cpython-311.pyc
+│   │   └── tts_evaluator.cpython-311.pyc
 │   ├── stt_evaluator.py
 │   └── tts_evaluator.py
 ├── data
-│   ├── audio_samples
-│   ├── ground_truth
-│   └── text_samples
+│   ├── reference
+│   ├── test_inputs
+│   └── test_outputs
+├── integration_test.py
+├── logs
+│   ├── core.tts_evaluator.log
+│   ├── tts_stt_framework.log
+│   ├── utils.audio_utils.log
+│   ├── utils.file_utils.log
+│   ├── utils.log
+│   ├── utils.metrics_utils.log
+│   └── utils.report_generator.log
 ├── main.py
+├── __pycache__
+│   ├── main.cpython-311.pyc
+│   └── test_executor.cpython-311.pyc
 ├── README.md
 ├── requirements.txt
 ├── results
-│   ├── html
-│   ├── json
-│   └── yaml
 ├── test_executor.py
 ├── tests
 │   ├── test_clients.py
@@ -43,6 +76,16 @@
     ├── file_utils.py
     ├── __init__.py
     ├── logger.py
-    └── metrics_utils.py
+    ├── metrics.py
+    ├── metrics_utils.py
+    ├── __pycache__
+    │   ├── audio_utils.cpython-311.pyc
+    │   ├── file_utils.cpython-311.pyc
+    │   ├── __init__.cpython-311.pyc
+    │   ├── logger.cpython-311.pyc
+    │   ├── metrics.cpython-311.pyc
+    │   ├── metrics_utils.cpython-311.pyc
+    │   └── report_generator.cpython-311.pyc
+    └── report_generator.py
 
-15 directories, 31 files
+18 directories, 71 files
