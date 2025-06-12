@@ -1,0 +1,31 @@
+{
+  "report_metadata": {
+    "generated_at": "2025-06-12T07:28:45.941161",
+    "framework_version": "1.0.0",
+    "report_type": "json"
+  },
+  "evaluation_results": {
+    "metadata": {
+      "framework_version": "1.0.0",
+      "execution_timestamp": "2025-06-12T07:28:45.936596",
+      "execution_duration": "0:00:00.000432",
+      "total_test_suites": 1,
+      "total_tests": 0,
+      "successful_tests": 0,
+      "failed_tests": 0,
+      "success_rate": 0,
+      "configuration": {
+        "max_workers": 4,
+        "parallel_execution": true,
+        "timeout_seconds": 300
+      }
+    },
+    "suite_results": {
+      "Standard TTS/STT Evaluation": []
+    },
+    "aggregate_metrics": {},
+    "provider_summary": {},
+    "model_type_summary": {},
+    "detailed_results": []
+  }
+}

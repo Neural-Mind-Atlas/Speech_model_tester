@@ -26,10 +26,15 @@ class ElevenLabsClient(BaseTTSSTTClient):
         self.default_voice_id = config.get('default_voice_id', 'pNInz6obpgDQGcFmaJgB')  # Adam voice
         self.default_model_id = config.get('default_model_id', 'eleven_monolingual_v1')
         
-        # API headers
+        # API headers for TTS
         self.headers = {
             'Accept': 'audio/mpeg',
             'Content-Type': 'application/json',
+            'xi-api-key': self.api_key
+        }
+        
+        # API headers for STT (multipart/form-data)
+        self.stt_headers = {
             'xi-api-key': self.api_key
         }
         
@@ -41,9 +46,9 @@ class ElevenLabsClient(BaseTTSSTTClient):
             'use_speaker_boost': True
         }
         
-        # ElevenLabs only supports TTS, not STT
+        # ElevenLabs now supports both TTS and STT
         self.supports_tts = True
-        self.supports_stt = False
+        self.supports_stt = True
         
         logger.info(f"ElevenLabs client initialized - Model: {model_name}, Base URL: {self.base_url}")
     
@@ -167,20 +172,106 @@ class ElevenLabsClient(BaseTTSSTTClient):
             )
     
     def speech_to_text(self, 
-                      audio_data: bytes,
-                      audio_format: str = "wav",
-                      language: str = "en",
-                      **kwargs) -> STTResponse:
+                       audio_data: bytes,
+                       audio_format: str = "wav",
+                       language: str = "en",
+                       **kwargs) -> STTResponse:
         """
-        ElevenLabs does not support Speech-to-Text
+        Convert speech to text using ElevenLabs STT
+        
+        Args:
+            audio_data: Audio data in bytes
+            audio_format: Audio format (wav, mp3, etc.)
+            language: Language code (currently supports limited languages)
+            **kwargs: Additional parameters
         
         Returns:
-            STTResponse indicating STT is not supported
+            STTResponse with transcription
         """
-        return STTResponse(
-            success=False,
-            error_message="Speech-to-Text is not supported by ElevenLabs"
-        )
+        if not self.supports_stt:
+            return STTResponse(
+                success=False,
+                error_message="STT not supported by this model configuration"
+            )
+        
+        try:
+            start_time = time.time()
+            
+            # Validate audio input
+            self._validate_audio_input(audio_data, audio_format)
+            
+            # Prepare multipart form data
+            files = {
+                'audio': ('audio.' + audio_format, audio_data, f'audio/{audio_format}')
+            }
+            
+            # Optional parameters
+            data = {}
+            if 'model_id' in kwargs:
+                data['model_id'] = kwargs['model_id']
+            if language and language != "en":
+                data['language'] = language
+            
+            # API endpoint
+            url = f"{self.base_url}/speech-to-text"
+            
+            logger.debug(f"ElevenLabs STT request: format={audio_format}, size={len(audio_data)}")
+            
+            # Make API request
+            response = requests.post(
+                url,
+                files=files,
+                data=data,
+                headers=self.stt_headers,
+                timeout=kwargs.get('timeout', 60)  # STT typically takes longer
+            )
+            
+            latency = time.time() - start_time
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                # Extract transcription text
+                transcription = result.get('text', '')
+                confidence = result.get('confidence', 0.0)
+                
+                metadata = {
+                    'provider': 'elevenlabs',
+                    'audio_format': audio_format,
+                    'audio_size': len(audio_data),
+                    'language': language,
+                    'confidence': confidence,
+                    'response_headers': dict(response.headers)
+                }
+                
+                return STTResponse(
+                    success=True,
+                    transcription=transcription,
+                    confidence=confidence,
+                    latency=latency,
+                    metadata=metadata
+                )
+            else:
+                error_msg = f"ElevenLabs STT API error: {response.status_code}"
+                try:
+                    error_details = response.json()
+                    error_msg += f" - {error_details.get('detail', {}).get('message', 'Unknown error')}"
+                except:
+                    error_msg += f" - {response.text}"
+                
+                logger.error(error_msg)
+                return STTResponse(
+                    success=False,
+                    error_message=error_msg,
+                    latency=latency
+                )
+        
+        except Exception as e:
+            logger.error(f"ElevenLabs STT error: {str(e)}")
+            return STTResponse(
+                success=False,
+                error_message=str(e)
+            )
     
     def get_available_models(self, model_type: str) -> List[str]:
         """
@@ -214,7 +305,8 @@ class ElevenLabsClient(BaseTTSSTTClient):
                 return ['eleven_monolingual_v1']
         
         elif model_type == 'stt':
-            return []  # ElevenLabs doesn't support STT
+            # Return available STT models
+            return ['eleven_speech_to_text_v1']
         
         return []
     
@@ -324,3 +416,27 @@ class ElevenLabsClient(BaseTTSSTTClient):
         # Check for unsupported characters (basic validation)
         if any(ord(char) > 65535 for char in text):
             raise ValueError("Text contains unsupported Unicode characters")
+    
+    def _validate_audio_input(self, audio_data: bytes, audio_format: str) -> None:
+        """
+        Validate audio input for ElevenLabs STT
+        
+        Args:
+            audio_data: Audio data to validate
+            audio_format: Audio format
+        
+        Raises:
+            ValueError: If audio is invalid
+        """
+        if not audio_data:
+            raise ValueError("Audio data cannot be empty")
+        
+        # Check file size (ElevenLabs typically has limits)
+        max_size = 25 * 1024 * 1024  # 25MB typical limit
+        if len(audio_data) > max_size:
+            raise ValueError(f"Audio file too large: {len(audio_data)} bytes (max {max_size})")
+        
+        # Validate supported formats
+        supported_formats = ['wav', 'mp3', 'mp4', 'm4a', 'flac', 'ogg']
+        if audio_format.lower() not in supported_formats:
+            raise ValueError(f"Unsupported audio format: {audio_format}. Supported: {supported_formats}")

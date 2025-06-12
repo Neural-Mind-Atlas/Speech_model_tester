@@ -61,3 +61,22 @@
 2025-06-12 05:40:40 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
 2025-06-12 05:40:40 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: /tmp/tts_stt_test_uvjdwf_w/results
 2025-06-12 05:40:40 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 06:39:50 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 06:39:50 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: /tmp/tts_stt_test_9mh5so4n/results
+2025-06-12 06:39:50 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:27:17 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:27:17 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:27:17 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: /tmp/tts_stt_test_asy7x2n1/results
+2025-06-12 07:27:17 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:28:45 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:28:45 - utils.report_generator - INFO - _log:201 - HTML report generated: results/evaluation_report_20250612_072845.html
+2025-06-12 07:28:45 - utils.report_generator - INFO - _log:201 - JSON report generated: results/evaluation_report_20250612_072845.json
+2025-06-12 07:28:45 - utils.report_generator - INFO - _log:201 - YAML report generated: results/evaluation_report_20250612_072845.yaml
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - HTML report generated: results/evaluation_report_20250612_072918.html
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - JSON report generated: results/evaluation_report_20250612_072918.json
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - YAML report generated: results/evaluation_report_20250612_072918.yaml
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - ReportGenerator initialized with results dir: results
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - HTML report generated: results/evaluation_report_20250612_072918.html
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - JSON report generated: results/evaluation_report_20250612_072918.json
+2025-06-12 07:29:18 - utils.report_generator - INFO - _log:201 - YAML report generated: results/evaluation_report_20250612_072918.yaml

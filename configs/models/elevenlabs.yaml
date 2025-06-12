@@ -1,3 +1,4 @@
+{
     "provider_name": "ElevenLabs",
     "api_base_url": "https://api.elevenlabs.io/v1",
     "tts": {
@@ -10,11 +11,11 @@
                 "max_characters": 5000,
                 "supported_formats": ["mp3"],
                 "default_settings": {
-                    "voice_id": "pNInz6obpgDQGcFmaJgB",  # Adam
+                    "voice_id": "pNInz6obpgDQGcFmaJgB",
                     "stability": 0.5,
                     "similarity_boost": 0.5,
                     "style": 0.0,
-                    "use_speaker_boost": True
+                    "use_speaker_boost": true
                 }
             },
             {
@@ -29,7 +30,7 @@
                     "stability": 0.5,
                     "similarity_boost": 0.5,
                     "style": 0.0,
-                    "use_speaker_boost": True
+                    "use_speaker_boost": true
                 }
             },
             {
@@ -44,7 +45,7 @@
                     "stability": 0.5,
                     "similarity_boost": 0.5,
                     "style": 0.0,
-                    "use_speaker_boost": True
+                    "use_speaker_boost": true
                 }
             },
             {
@@ -59,7 +60,7 @@
                     "stability": 0.5,
                     "similarity_boost": 0.5,
                     "style": 0.0,
-                    "use_speaker_boost": True
+                    "use_speaker_boost": true
                 }
             }
         ],
@@ -137,51 +138,57 @@
         ]
     },
     "stt": {
-        "models": [],
-        "note": "ElevenLabs does not provide Speech-to-Text services"
+        "models": [
+            {
+                "name": "eleven_speech_to_text_v1",
+                "display_name": "ElevenLabs Speech-to-Text v1",
+                "description": "High-quality speech recognition model",
+                "languages": ["en"],
+                "supported_formats": ["wav", "mp3", "mp4", "m4a", "flac", "ogg"],
+                "max_file_size": "25MB",
+                "default_settings": {
+                    "language": "en"
+                }
+            }
+        ],
+        "note": "ElevenLabs Speech-to-Text service"
     },
     "rate_limits": {
         "requests_per_minute": 120,
-        "characters_per_month": 10000,  # Free tier limit
+        "characters_per_month": 10000,
         "concurrent_requests": 2
     },
-    "pricing": {
-        "free_tier": {
-            "characters_per_month": 10000,
-            "voice_cloning": False,
-            "commercial_license": False
-        },
-        "starter": {
-            "characters_per_month": 30000,
-            "price_per_month": 5,
-            "voice_cloning": True,
-            "commercial_license": True
-        },
-        "creator": {
-            "characters_per_month": 100000,
-            "price_per_month": 22,
-            "voice_cloning": True,
-            "commercial_license": True
-        },
-        "pro": {
-            "characters_per_month": 500000,
-            "price_per_month": 99,
-            "voice_cloning": True,
-            "commercial_license": True
-        }
+    "authentication": {
+        "type": "api_key",
+        "header_name": "xi-api-key",
+        "env_var": "ELEVENLABS_API_KEY"
     },
-    "features": {
-        "voice_cloning": True,
-        "voice_design": True,
-        "speech_synthesis": True,
-        "voice_library": True,
-        "api_access": True,
-        "commercial_license": True,
-        "priority_support": True
+    "error_handling": {
+        "retry_attempts": 3,
+        "retry_delay": 1.0,
+        "timeout_seconds": 60,
+        "common_errors": [
+            {
+                "code": 401,
+                "message": "Invalid API key",
+                "retry": false
+            },
+            {
+                "code": 429,
+                "message": "Rate limit exceeded",
+                "retry": true,
+                "wait_time": 60
+            },
+            {
+                "code": 413,
+                "message": "Audio file too large",
+                "retry": false
+            }
+        ]
     },
-    "audio_settings": {
-        "default_format": "mp3",
-        "sample_rate": 22050,
-        "bit_depth": 16,
-        "channels": 1
+    "health_check": {
+        "endpoint": "/user",
+        "timeout_seconds": 10,
+        "expected_status_codes": [200]
     }
+}

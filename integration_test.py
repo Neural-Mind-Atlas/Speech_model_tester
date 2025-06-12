@@ -909,7 +909,7 @@ class FrameworkIntegrationTester:
                 test_data={"audio_path": "/tmp/mock_audio.wav"}
             )
             
-            # Add ElevenLabs integration test
+            # Add ElevenLabs integration test - MINIMAL CHANGE: Added STT test
             suite.add_test(
                 provider="elevenlabs",
                 model_type="tts",
