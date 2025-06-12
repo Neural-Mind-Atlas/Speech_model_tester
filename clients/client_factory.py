@@ -120,8 +120,9 @@ class ClientFactory:
                 # Google client expects (config) - fixed constructor
                 client = client_class(provider_config)
             elif provider == 'elevenlabs':
-                # ElevenLabs client expects (config)
-                client = client_class(provider_config)
+                # ElevenLabs client expects (model_name, config)
+                model = provider_config.pop('model_name', 'eleven_multilingual_v2')
+                client = client_class(model, provider_config)
             else:
                 # Other clients typically expect (config) or (**config)
                 try:
