@@ -182,7 +182,7 @@ async def evaluate(ctx, mode, providers, models, parallel, max_workers,
             total_tests=results['metadata']['total_tests'],
             success_rate=results['metadata']['success_rate']
         )
-        
+    
     except Exception as e:
         logger.error(
             "Evaluation failed",
@@ -242,7 +242,7 @@ async def test_single(ctx, provider, model_type, model_name, test_input):
             display_single_test_results(results)
         
         logger.info("Single test completed", provider=provider, model_type=model_type)
-        
+    
     except Exception as e:
         logger.error(
             "Single test failed",
@@ -287,7 +287,7 @@ async def generate_report(ctx, input_file, output_dir, formats):
         await generate_reports(results, config, formats, quiet)
         
         logger.info("Report generation completed", input_file=input_file)
-        
+    
     except Exception as e:
         logger.error(
             "Report generation failed",
@@ -361,7 +361,7 @@ def list_providers(ctx):
                     }
             
             print(json.dumps(provider_info, indent=2))
-        
+    
     except Exception as e:
         logger.error("Failed to list providers", error=str(e))
         sys.exit(1)
@@ -426,7 +426,7 @@ async def health_check(ctx, check_all, check_providers, check_data, check_config
         
         if not overall_health:
             sys.exit(1)
-        
+    
     except Exception as e:
         logger.error("Health check failed", error=str(e))
         sys.exit(1)
@@ -523,7 +523,8 @@ def get_enabled_tts_providers() -> List[str]:
         'ENABLE_AZURE_TTS',
         'ENABLE_GOOGLE_TTS',
         'ENABLE_SARVAM_TTS',
-        'ENABLE_CHATTERBOX_TTS'
+        'ENABLE_CHATTERBOX_TTS',
+        'ENABLE_ELEVENLABS_TTS'  # Added ElevenLabs TTS support
     ]
     
     for env_var in env_vars:
@@ -542,7 +543,8 @@ def get_enabled_stt_providers() -> List[str]:
         'ENABLE_AZURE_STT',
         'ENABLE_GOOGLE_STT',
         'ENABLE_SARVAM_STT',
-        'ENABLE_CHATTERBOX_STT'
+        'ENABLE_CHATTERBOX_STT',
+        'ENABLE_ELEVENLABS_STT'  # Added ElevenLabs STT support
     ]
     
     for env_var in env_vars:
@@ -610,7 +612,7 @@ async def generate_reports(results: Dict[str, Any], config: BaseConfig,
                 continue
             
             generated_reports.append((format_type.upper(), report_file))
-            
+        
         except Exception as e:
             logger.error(
                 "Failed to generate report",
