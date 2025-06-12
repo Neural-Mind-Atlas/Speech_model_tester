@@ -81,4 +81,8 @@ Thumbs.db
 
 
 1.txt
-results/
+results/*
+
+.env
+logs/ 
+*.log
